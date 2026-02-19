@@ -164,7 +164,7 @@ cd mutation_prediction
 sbatch run_agentic.sh
 ```
 
-The demographic classifier from Stage I provides per-patch attention scores indicating demographic signal strength. During mutation model training, the agent dynamically selects between signal-leveraging filtering (filters patches with high demographic signals) and random filtering (conservative fallback) based on demographic prediction correctness, model reliability, group imbalance, and training progress. All decisions use only training data statistics, ensuring zero data leakage.
+The demographic classifier from Stage I provides per-patch attention scores indicating demographic signal strength. During mutation model training, the agent dynamically selects between signal-leveraging filtering (filters patches with high demographic signals) and random filtering (demographic signal unreliable) based on demographic prediction correctness, model reliability, group imbalance, and training progress. All decisions use only training data statistics, ensuring no data leakage.
 
 Output: Models saved in `./output/mutation_models_agentic/{ATTRIBUTE}/TCGA/{FOUNDATION_MODEL}/FS/agent_demographic_agentic/` with agent decision logs.
 
