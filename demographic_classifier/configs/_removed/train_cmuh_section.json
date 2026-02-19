@@ -1,0 +1,72 @@
+{
+    "save_dir": "/n/scratch/users/d/dmv626/kidney-path-ai-project/section-detection/experiments/6",
+    "is_multi_class": false,
+    "train_targets_file_path_list": [
+        "/n/scratch/users/d/dmv626/data/CMUH-EHR/LABELS/frozen_vs_paraffin_labels.json"
+    ],
+    "val_test_targets_file_path_list": [
+        "/n/scratch/users/d/dmv626/data/CMUH-EHR/LABELS/frozen_vs_paraffin_labels.json"
+    ],
+    "features_dir_path_list": [
+        "/n/scratch/users/d/dmv626/data/CMUH-HE/VIRCHOW2-Tile-Features_5x/",
+        "/n/scratch/users/d/dmv626/data/CMUH-PAS/VIRCHOW2-Tile-Features_5x/",
+        "/n/scratch/users/d/dmv626/data/CMUH-TRI/VIRCHOW2-Tile-Features_5x/",
+        "/n/scratch/users/d/dmv626/data/CMUH-SIL/VIRCHOW2-Tile-Features_5x/"
+    ],
+    "model_type": "MLPMeanPoolModel",
+    "model_init_args": {
+        "input_dim": 2560,
+        "hidden_layer_dims": [
+            256, 64, 8
+        ],
+        "output_dim": 1,
+        "inter_layer_activation_function": "gelu",
+        "final_activation_function": "sigmoid"
+    },
+    "metrics": [
+        "SampleSize",
+        "AUC",
+        "BCE",
+        "Accuracy",
+        "BalancedAccuracy",
+        "Precision",
+        "Recall",
+        "F1",
+        "TP",
+        "FP",
+        "TN",
+        "FN"
+    ],
+    "best_model_selector_metrics_list": [
+        "BalancedAccuracy",
+        "AUC",
+        "BCE"
+    ],
+    "tr_dataset_type": "TileLevelFeaturesDataset",
+    "tr_dataset_init_args": {
+        "n_tiles": 5
+    },
+    "class_balance": true,
+    "sample_names_balance": [],
+    "val_test_dataset_type": "TileLevelFeaturesDataset",
+    "val_test_dataset_init_args": {},
+    "optimizer_type": "Adam",
+    "optimizer_init_args": {
+        "lr": 0.0001
+    },
+    "loss_function": "BCELoss",
+    "loss_function_init_args": {},
+    "n_epochs": 20,
+    "batch_size": 8,
+    "gradient_accumulation_steps": 1,
+    "cross_validation_folds": 5,
+    "early_stopping_patience": null,
+    "val_from_train_ratio": 0.1,
+    "validation_size": 0.1,
+    "test_size": 0.1,
+    "train_val_test_split_path": null,
+    "ex_val_features_dir_path_list": [],
+    "ex_val_targets_file_path_list": [],
+    "ex_val_dataset_type": null,
+    "ex_val_dataset_init_args": null
+}

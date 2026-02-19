@@ -1,0 +1,72 @@
+{
+    "_comment": "Template configuration for training demographic classifier on custom datasets",
+    "_instructions": "Copy this file and modify paths to point to your own data",
+    
+    "save_dir": "./output/my_demographic_classifier",
+    "is_multi_class": true,
+    
+    "train_targets_file_path_list": [
+        "path/to/your/labels.json"
+    ],
+    "val_test_targets_file_path_list": [
+        "path/to/your/labels.json"
+    ],
+    "features_dir_path_list": [
+        "path/to/your/wsi_features"
+    ],
+    
+    "model_type": "MultiClassMLPMeanPoolModel",
+    "model_init_args": {
+        "input_dim": 768,
+        "output_dim": 2,
+        "hidden_layer_dims": [64, 32, 8],
+        "inter_layer_activation_function": "relu",
+        "_comment_input_dim": "Must match foundation model dimension: CHIEF=768, UNI=1024, GIGAPATH=1536, VIRCHOW2=2560",
+        "_comment_output_dim": "Number of classes: 2 for binary (old/young, Male/Female), 3+ for multi-class"
+    },
+    
+    "metrics": [
+        "SampleSize",
+        "CE",
+        "MicroAUC",
+        "Top1Accuracy",
+        "Top1BalancedAccuracy",
+        "AUC_OneVOne",
+        "AUC_OneVRest",
+        "MultiClassConfusionMatrix"
+    ],
+    "best_model_selector_metrics_list": [
+        "MicroAUC",
+        "Top1BalancedAccuracy"
+    ],
+    
+    "tr_dataset_type": "TileLevelFeaturesDataset",
+    "tr_dataset_init_args": {
+        "n_tiles": 500,
+        "_comment": "Number of patches to sample per WSI during training"
+    },
+    
+    "class_balance": false,
+    "val_test_dataset_type": null,
+    "val_test_dataset_init_args": null,
+    
+    "optimizer_type": "Adam",
+    "optimizer_init_args": {
+        "lr": 0.00002
+    },
+    
+    "loss_function": "CrossEntropyLoss",
+    "loss_function_init_args": {
+        "label_smoothing": 0.1
+    },
+    
+    "n_epochs": 50,
+    "batch_size": 8,
+    "gradient_accumulation_steps": 1,
+    "cross_validation_folds": null,
+    "early_stopping_patience": 10,
+    "val_from_train_ratio": 0.1,
+    "validation_size": 0.1,
+    "test_size": 0.1
+}
+

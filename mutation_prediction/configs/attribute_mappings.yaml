@@ -1,0 +1,20 @@
+# Demographic attribute mappings for UNVEIL
+# Standardizes demographic attribute values across datasets
+# Handles case variations and alternative spellings
+
+age:
+  old: old
+  young: young
+
+race:
+  White: White
+  Black or African American: Black or African American
+  white: White
+  black or african american: Black or African American
+
+sex:
+  Male: Male
+  Female: Female
+  male: Male
+  female: Female
+

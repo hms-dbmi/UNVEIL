@@ -1,0 +1,7 @@
+Study ID	Patient ID	Sample ID	Diagnosis Age	Sex	Race Category	Cancer Type	Overall Survival (Months)	Overall Survival Status
+brca_tcga_pan_can_atlas_2018	MOCK-PATIENT-001	MOCK-SAMPLE-001	65	Female	White	Breast Cancer	120.5	0:LIVING
+brca_tcga_pan_can_atlas_2018	MOCK-PATIENT-002	MOCK-SAMPLE-002	45	Female	Black or African American	Breast Cancer	85.3	0:LIVING
+brca_tcga_pan_can_atlas_2018	MOCK-PATIENT-003	MOCK-SAMPLE-003	72	Male	White	Breast Cancer	48.2	1:DECEASED
+brca_tcga_pan_can_atlas_2018	MOCK-PATIENT-004	MOCK-SAMPLE-004	38	Female	Asian	Breast Cancer	95.7	0:LIVING
+brca_tcga_pan_can_atlas_2018	MOCK-PATIENT-005	MOCK-SAMPLE-005	58	Female	White	Breast Cancer	110.4	0:LIVING
+

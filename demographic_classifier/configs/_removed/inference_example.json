@@ -1,0 +1,21 @@
+{
+    "save_dir": "/n/scratch/users/d/dmv626/kidney-path-ai-project/section-detection/6_fold_5_best_BCE",
+    "pt_bundle_path": "/n/scratch/users/d/dmv626/kidney-path-ai-project/section-detection/experiments/6/cv_fold_5/models/target_target_1_best_BCE.pt",
+    "is_multi_class": false,
+    "targets_file_path_list": [
+    ],
+    "features_dir_path_list": [
+        "/n/scratch/users/d/dmv626/data/CMUH-HE/VIRCHOW2-Tile-Features_5x",
+        "/n/scratch/users/d/dmv626/data/CMUH-PAS/VIRCHOW2-Tile-Features_5x",
+        "/n/scratch/users/d/dmv626/data/CMUH-TRI/VIRCHOW2-Tile-Features_5x",
+        "/n/scratch/users/d/dmv626/data/CMUH-SIL/VIRCHOW2-Tile-Features_5x"
+    ],
+    "metrics": [
+        "SampleSize"
+    ],
+    "dataset_type": "TileLevelFeaturesDataset",
+    "dataset_init_args": {
+        "no_targets": true
+    },
+    "intermediate_layers_hooks": []
+}

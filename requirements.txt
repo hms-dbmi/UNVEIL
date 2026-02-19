@@ -1,0 +1,33 @@
+# Core dependencies
+torch==2.0.0
+torchvision
+numpy==1.22.2
+pandas==2.0.3
+scipy==1.10.0
+
+# Machine learning
+scikit_learn==1.2.2
+
+# Deep learning utilities
+loralib==0.1.1
+warmup_scheduler==0.3
+
+# Survival analysis (for mutation prediction)
+lifelines==0.27.8
+mlxtend==0.22.0
+
+# Visualization and utilities
+matplotlib==3.6.2
+opencv-python-headless
+tqdm==4.64.1
+
+# Data validation and formatting (for demographic classifier)
+pydantic>=2.0.0
+tabulate
+
+# Experiment tracking
+wandb==0.15.4
+
+# YAML support
+pyyaml
+

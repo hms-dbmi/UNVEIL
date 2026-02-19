@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# PyTorch
+*.pt
+*.pth
+*.ckpt
+
+# Data files
+*.csv
+*.h5
+*.hdf5
+*.pickle
+*.pkl
+*.npy
+*.npz
+
+# Logs
+logs/
+*.log
+wandb/
+
+# Model outputs
+output/
+mutation_models/
+mutation_models_agentic/
+results/
+checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SLURM
+slurm-*.out
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Removed content (not for public release)
+_removed_content/
+_removed_temporarily/
+*/_removed/
+
+# Configuration (if contains sensitive paths)
+# Uncomment if needed:
+# configs/local_*.yaml
+
+# Exclude large data directories
+data/features/
+data/clinical/
+data/coordinates/
+
+# Keep sample data structure
+!data/sample/
+!data/sample/README.md
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+

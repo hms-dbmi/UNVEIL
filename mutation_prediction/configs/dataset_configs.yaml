@@ -1,0 +1,47 @@
+# Dataset Configuration for UNVEIL
+# This file defines data sources and their specific parameters
+
+
+# TCGA Pan-Cancer Atlas (public dataset)
+TCGA:
+  generator: generateTCGADataSet
+  args:
+    strClinicalInformationPath: clinical_information/TCGA
+    age_col: Diagnosis Age
+
+# Example data provided with this repository
+ExampleData:
+  generator: generateTCGADataSet
+  args:
+    strClinicalInformationPath: example_data/mutation_prediction/clinical_information/TCGA
+    age_col: Diagnosis Age
+
+# Template for external datasets
+# Copy and modify this template to add your own institutional datasets
+# ExternalDatasetTemplate:
+#   generator: generateExternalDataSet
+#   args:
+#     strClinicalInformationPath: clinical_information/YOUR_DATASET
+#     age_col: age_at_diagnosis  # or 'Diagnosis Age', 'age', etc.
+#     intDiagnosticSlide: 0      # 0 = frozen section, 1 = FFPE
+#     mutation_kw: _mutated      # keyword to identify mutation columns
+
+##################################################
+# Notes for adding custom datasets:
+# 
+# 1. strClinicalInformationPath: Path to directory containing CSV files
+#    with clinical metadata and demographic information
+# 
+# 2. age_col: Column name for patient age in your dataset
+#    Common variants: 'age', 'age_at_diagnosis', 'Diagnosis Age'
+# 
+# 3. intDiagnosticSlide: Slide preparation type
+#    0 = Frozen section (FS)
+#    1 = Formalin-Fixed Paraffin-Embedded (FFPE)
+# 
+# 4. mutation_kw: Keyword suffix for mutation status columns
+#    e.g., '_mutated' means columns like 'TP53_mutated', 'KRAS_mutated'
+# 
+# 5. generator: Use 'generateTCGADataSet' for TCGA-format data,
+#    'generateExternalDataSet' for other institutional datasets
+##################################################
