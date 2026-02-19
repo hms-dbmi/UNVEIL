@@ -198,6 +198,6 @@ output/
 
 ## License
 
-This project is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3.0. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License Version 3.0. See the [LICENSE](LICENSE) file for details.
 
 
