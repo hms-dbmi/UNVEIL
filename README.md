@@ -157,31 +157,26 @@ Output: Models and performance metrics saved in `./output/mutation_models/{ATTRI
 
 ### III: Apply Demographic Signal-Aware Agentic Scheduling
 
-Mitigate performance disparities using adaptive patch contribution modulation:
+Mitigate performance disparities using adaptive patch filtering:
 
 ```bash
 cd mutation_prediction
 sbatch run_agentic.sh
 ```
 
-This applies multi-factor routing that selectively modulates patches based on:
-1. **Demographic model accuracy**: Use random filtering if accuracy < 0.60 (unreliable predictions)
-2. **Group imbalance**: Conservative filtering if imbalance > 5.0 in early training (< 150 slides)
-3. **Training progress**: Random filtering in early phase (< 200 slides), signal-leveraging in late phase (≥ 200 slides)
+**How it works**: A separate demographic classifier identifies which patches contain demographic signals. During mutation model training, when the demographic model makes an **incorrect prediction** on a slide (indicating biased patches may be misleading), the agent:
 
-**Routing decision logic**:
-```
-if demographic_accuracy < 0.60:
-    → Random filtering (model unreliable)
-elif imbalance_ratio > 5.0 AND total_slides < 150:
-    → Conservative random (preserve minority)
-elif total_slides < 200:
-    → Random filtering (early training)
-else:
-    → Signal-leveraging filtering (late training)
-```
+1. **Routes filtering strategy** based on three factors (no data leakage):
+   - **Demographic accuracy** < 0.60 → Random filtering (model unreliable)
+   - **Imbalance ratio** > 5.0 AND slides < 150 → Random filtering (preserve minority)  
+   - **Training progress** < 200 slides → Random filtering (early phase)
+   - **Training progress** ≥ 200 slides → Signal-leveraging filtering (late phase)
 
-This approach ensures zero data leakage: all decisions use only training data statistics (group sizes, demographic model accuracy computed on training set, training progress metrics).
+2. **Signal-leveraging filtering** (late training): Computes composite scores for each patch (combining demographic attention, confidence, uncertainty, heterogeneity, spatial clustering). Patches with **high demographic signal** are filtered out, keeping less-biased patches for training.
+
+3. **Random filtering** (early training/unreliable model): Uses random patch sampling to avoid potential harm from unreliable demographic signals.
+
+All decisions use only training data (group distributions, demographic accuracy on training set, training progress), ensuring zero data leakage.
 
 Output: Models saved in `./output/mutation_models_agentic/{ATTRIBUTE}/TCGA/{FOUNDATION_MODEL}/FS/agent_demographic_agentic/` with agent decision logs.
 
