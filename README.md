@@ -164,17 +164,7 @@ cd mutation_prediction
 sbatch run_agentic.sh
 ```
 
-During mutation model training, the demographic classifier from Stage I provides per-patch attention scores indicating demographic signal strength. The agent adapts filtering based on prediction correctness:
-
-**When demographic prediction is correct**: Applies attention-based filtering using composite scores (demographic attention, confidence, uncertainty, heterogeneity, spatial clustering) to selectively filter patches with high demographic signals.
-
-**When demographic prediction is incorrect**: Routes to conservative strategies based on model reliability:
-- Demographic accuracy < 0.60 → Random filtering (unreliable model)
-- Imbalance ratio > 5.0 AND slides < 150 → Random filtering (preserve minority data)
-- Training progress < 200 slides → Random filtering (insufficient data)
-- Training progress ≥ 200 slides → Signal-leveraging filtering (sufficient evidence)
-
-All routing decisions use only training data statistics (group distributions, demographic accuracy on training set, training progress), ensuring zero data leakage.
+The demographic classifier from Stage I provides per-patch attention scores indicating demographic signal strength. During mutation model training, the agent dynamically selects between signal-leveraging filtering (filters patches with high demographic signals) and random filtering (conservative fallback) based on demographic prediction correctness, model reliability, group imbalance, and training progress. All decisions use only training data statistics, ensuring zero data leakage.
 
 Output: Models saved in `./output/mutation_models_agentic/{ATTRIBUTE}/TCGA/{FOUNDATION_MODEL}/FS/agent_demographic_agentic/` with agent decision logs.
 
