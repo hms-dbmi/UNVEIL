@@ -19,7 +19,7 @@ mlxtend==0.22.0
 # Visualization and utilities
 matplotlib==3.6.2
 opencv-python-headless
-tqdm==4.64.1
+tqdm==4.66.3
 
 # Data validation and formatting (for demographic classifier)
 pydantic>=2.0.0
