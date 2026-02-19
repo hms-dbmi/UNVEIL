@@ -164,19 +164,17 @@ cd mutation_prediction
 sbatch run_agentic.sh
 ```
 
-**How it works**: A separate demographic classifier identifies which patches contain demographic signals. During mutation model training, when the demographic model makes an **incorrect prediction** on a slide (indicating biased patches may be misleading), the agent:
+During mutation model training, the demographic classifier from Stage I provides per-patch attention scores indicating demographic signal strength. The agent adapts filtering based on prediction correctness:
 
-1. **Routes filtering strategy** based on three factors (no data leakage):
-   - **Demographic accuracy** < 0.60 → Random filtering (model unreliable)
-   - **Imbalance ratio** > 5.0 AND slides < 150 → Random filtering (preserve minority)  
-   - **Training progress** < 200 slides → Random filtering (early phase)
-   - **Training progress** ≥ 200 slides → Signal-leveraging filtering (late phase)
+**When demographic prediction is correct**: Applies attention-based filtering using composite scores (demographic attention, confidence, uncertainty, heterogeneity, spatial clustering) to selectively filter patches with high demographic signals.
 
-2. **Signal-leveraging filtering** (late training): Computes composite scores for each patch (combining demographic attention, confidence, uncertainty, heterogeneity, spatial clustering). Patches with **high demographic signal** are filtered out, keeping less-biased patches for training.
+**When demographic prediction is incorrect**: Routes to conservative strategies based on model reliability:
+- Demographic accuracy < 0.60 → Random filtering (unreliable model)
+- Imbalance ratio > 5.0 AND slides < 150 → Random filtering (preserve minority data)
+- Training progress < 200 slides → Random filtering (insufficient data)
+- Training progress ≥ 200 slides → Signal-leveraging filtering (sufficient evidence)
 
-3. **Random filtering** (early training/unreliable model): Uses random patch sampling to avoid potential harm from unreliable demographic signals.
-
-All decisions use only training data (group distributions, demographic accuracy on training set, training progress), ensuring zero data leakage.
+All routing decisions use only training data statistics (group distributions, demographic accuracy on training set, training progress), ensuring zero data leakage.
 
 Output: Models saved in `./output/mutation_models_agentic/{ATTRIBUTE}/TCGA/{FOUNDATION_MODEL}/FS/agent_demographic_agentic/` with agent decision logs.
 
