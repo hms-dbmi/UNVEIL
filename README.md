@@ -213,17 +213,6 @@ output/
 ```
 
 
-## Adapting to Other Downstream Tasks
-
-While this repository demonstrates UNVEIL using mutation prediction as an exemplar, the framework is task-agnostic. To adapt to other pathology tasks:
-
-1. Modify `main_genetic.py` to load task-specific labels and loss functions
-2. Update `dataset.py` to handle task-specific data formats
-3. Adjust `network.py` output dimensions for task requirements
-4. Maintain the same demographic classifier and agentic scheduling pipeline
-
-The core UNVEIL methodology (demographic signal detection → fairness assessment → agentic mitigation) remains applicable across pathology prediction tasks.
-
 ## License
 
 This project is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3.0. See the [LICENSE](LICENSE) file for details.
