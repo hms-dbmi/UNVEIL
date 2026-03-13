@@ -1,6 +1,6 @@
 # UNVEIL: Uncovering Non-apparent Visual Encodings in Latent Space
 
-Kao TW et al. Demographic Differences in Tissue Architecture Drive Disparities in Pathology AI Performance. 
+Kao TW et al. _Demographic Differences in Tissue Architecture Drive Disparities in Pathology AI Performance._ 
 
 This repository implements UNVEIL, a framework for identifying, quantifying, and mitigating demographic-associated signals in pathology foundation model representations. By integrating demographic classification, nuclear morphometric analysis, and demographic signal-aware agentic scheduling, UNVEIL addresses performance disparities in computational pathology tasks.
 
