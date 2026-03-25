@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 import torch.nn as nn
 import torch
 
@@ -20,7 +20,7 @@ ACTIVATION_FUNCTIONS = {
 def make_mlp(
     layer_dims: List[int],
     inter_layer_activation_function: str = 'relu',
-    final_activation_function: str | None = None
+    final_activation_function: Optional[str] = None
 ) -> nn.Sequential:
 
     # Ensure the activation functions are valid
@@ -56,7 +56,7 @@ class MLPModel(nn.Module):
         hidden_layer_dims: List[int],
         output_dim: int,
         inter_layer_activation_function: str,
-        final_activation_function: str | None = None,
+        final_activation_function: Optional[str] = None,
         input_dropout_rate: float = 0.0,
         input_batch_norm_features: List[int] = [],
     ) -> None:

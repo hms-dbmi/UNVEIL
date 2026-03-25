@@ -1,4 +1,17 @@
 #!/bin/bash
+# ===============================================================================
+# HPC-SPECIFIC SCRIPT - Requires SLURM Job Scheduler
+# ===============================================================================
+# This script is designed for High-Performance Computing (HPC) environments with
+# SLURM job scheduler. To run on non-HPC systems:
+#
+#   1. Remove all #SBATCH directives (lines 8-15)
+#   2. Remove or comment out 'module load' command (line 35)
+#   3. Manually set ARRAY_ID variable instead of using $SLURM_ARRAY_TASK_ID
+#      Example: ARRAY_ID=0
+#   4. Create log directories manually: mkdir -p ./logs/demographic_agentic
+#   5. Run directly: bash run_agentic.sh
+# ===============================================================================
 #SBATCH -c 4
 #SBATCH -t 10:00:00
 #SBATCH -p short

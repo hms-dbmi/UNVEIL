@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator, model_validator
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional, Union
 
 class TrainingConfigs(BaseModel):
     
@@ -26,11 +26,11 @@ class TrainingConfigs(BaseModel):
     # dataset arguments
     tr_dataset_type: str
     tr_dataset_init_args: Dict
-    collate_fn: str | None = None
+    collate_fn: Optional[str] = None
     class_balance: bool = False
     sample_names_balance: List[str] = []
-    val_test_dataset_type: str | None = None
-    val_test_dataset_init_args: Dict | None = None
+    val_test_dataset_type: Optional[str] = None
+    val_test_dataset_init_args: Optional[Dict] = None
 
     # training related arguments
     optimizer_type: str
@@ -40,21 +40,21 @@ class TrainingConfigs(BaseModel):
     n_epochs: int = 100
     batch_size: int = 16
     gradient_accumulation_steps: int = 1
-    cross_validation_folds: int | None = None
-    early_stopping_patience: int | None = None
+    cross_validation_folds: Optional[int] = None
+    early_stopping_patience: Optional[int] = None
 
     # data splitting
     sample_identification_regex: str = ".+"
     val_from_train_ratio: float = 0.1               # when using cross validation
     validation_size: float = 0.1                    # when NOT using cross validation
     test_size: float = 0.1                          # when NOT using cross validation
-    train_val_test_split_path: str | None = None    # when NOT using cross validation
+    train_val_test_split_path: Optional[str] = None    # when NOT using cross validation
 
     # external validation data paths
     ex_val_features_dir_path_list: List[str] = []
     ex_val_targets_file_path_list: List[str] = []
-    ex_val_dataset_type: str | None = None          # if none, default to training setup
-    ex_val_dataset_init_args: Dict | None = None    # if none, default to training setup
+    ex_val_dataset_type: Optional[str] = None          # if none, default to training setup
+    ex_val_dataset_init_args: Optional[Dict] = None    # if none, default to training setup
 
     # number of retries
     n_retries: int = 0
@@ -64,15 +64,15 @@ class TrainingConfigs(BaseModel):
         # Setting protected_namespaces to an empty tuple to avoid the warning
         protected_namespaces: tuple = ()
 
-    # Validator to ensure file paths are valid POSIX paths
+    # Validator to ensure file paths are valid POSIX paths (absolute or relative)
     @field_validator('train_targets_file_path_list', 'val_test_targets_file_path_list', 'features_dir_path_list')
     def validate_posix_path(cls, v):
         if v is not None:
             for path in v:
                 path = Path(path)
-                # Check if it's a valid POSIX path (absolute and no drive for POSIX)
-                if not path.is_absolute() or path.drive:  
-                    raise ValueError(f'{path} is not a valid POSIX path')
+                # Check if it's a valid POSIX path (no Windows drive letters)
+                if path.drive:  
+                    raise ValueError(f'{path} contains a drive letter, which is not compatible with POSIX systems')
         return v
     
     # Validator to ensure validation_size and test_size are above 0 and their sum is less than 1
@@ -114,7 +114,7 @@ class InferenceConfigs(BaseModel):
     save_dir: str
 
     # location of the model bundle
-    pt_bundle_path: str | List[str]
+    pt_bundle_path: Union[str, List[str]]
 
     # data type
     is_multi_class: bool = False
@@ -131,8 +131,8 @@ class InferenceConfigs(BaseModel):
     dataset_init_args: Dict
 
     # which data to run inference for
-    data_split_path: str | None = None
-    data_split_name: str | None = None
+    data_split_path: Optional[str] = None
+    data_split_name: Optional[str] = None
 
     # intermediate layers to capture output
     intermediate_layers_hooks: List[str] = []

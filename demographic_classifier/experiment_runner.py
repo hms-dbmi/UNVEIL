@@ -4,6 +4,7 @@ import json
 import copy
 import shutil
 import os
+from typing import Optional
 from dataset import setup_dataset
 from loss_functions import setup_loss_function
 from metrics import MetricManager
@@ -23,7 +24,7 @@ import pandas as pd
 
 class ExperimentRunner:
 
-    def __init__(self, configs_path: str, save_dir: str | None = None):
+    def __init__(self, configs_path: str, save_dir: Optional[str] = None):
         self.configs_path = configs_path
         self.save_dir = save_dir
         self.metrics_tables = []
@@ -361,7 +362,7 @@ class ExperimentRunner:
 
 class InferenceRunner:
 
-    def __init__(self, configs_path: str, save_dir: str | None = None):
+    def __init__(self, configs_path: str, save_dir: Optional[str] = None):
         self.configs_path = configs_path
         self.save_dir = save_dir
         self.metrics_tables = []

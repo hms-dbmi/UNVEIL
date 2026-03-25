@@ -1,7 +1,7 @@
 from collections import Counter
 from torch.utils.data import Dataset
 import torch
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from utils.infra import get_files_in_dir
 import copy
 import numpy as np
@@ -177,7 +177,7 @@ class TileLevelFeaturesDataset(WSILevelFeatureDataset):
         targets_dict,
         sample_keys_set = None,
         filter_regex: str = '.*',
-        n_tiles: int | None = None,
+        n_tiles: Optional[int] = None,
         no_targets: bool = False,
     ) -> None:
         
@@ -219,13 +219,13 @@ class TileLevelFeaturesMetaDataFilterDataset(Dataset):
         meta_data_dir_path_list,
         targets_dict,
         filter_field: str,
-        filter_fraction: float | None = None,
-        absolute_threshold: float | None = None,
+        filter_fraction: Optional[float] = None,
+        absolute_threshold: Optional[float] = None,
         keep_top: bool = False,
         sample_keys_set = None,
         filter_regex: str =  '.*',
         apply_metadata_filter_regex: str = '.*',
-        n_tiles: int | None = None,
+        n_tiles: Optional[int] = None,
     ) -> None:
         
         assert (filter_fraction is not None or absolute_threshold is not None), \
@@ -351,7 +351,7 @@ class CombTileLevelFeaturesDataset(Dataset):
         feature_dir_path_list,
         targets_dict,
         features_source_list: List[str],
-        n_tiles: int | None = 1000,
+        n_tiles: Optional[int] = 1000,
         sample_keys_set = None,
         filter_regex: str = '.*',
     ) -> None:
@@ -442,7 +442,7 @@ class OrderedCombTileLevelFeaturesDataset(Dataset):
         targets_dict,
         features_source_list: List[str],
         sample_keys_set = None,
-        n_tiles: int | None = None,
+        n_tiles: Optional[int] = None,
         filter_regex: str = '.*',
     ) -> None:
         
@@ -539,7 +539,7 @@ class PtLevelMultiWSITileDataset(TileLevelFeaturesDataset):
         feature_dir_path_list: List[str],
         targets_dict: Dict,
         sample_keys_set = None,
-        n_tiles: int | None = None,
+        n_tiles: Optional[int] = None,
         stain_balanced: bool = False,
         allow_identical_targets: bool = True,
         filter_regex: str = '.*',
@@ -656,7 +656,7 @@ class PtLevelMultiWSITileDataset(TileLevelFeaturesDataset):
 
 
 
-def sample_tiles_from_tensor(all_tiles_tensor: torch.Tensor, target_tiles_count: int | None):
+def sample_tiles_from_tensor(all_tiles_tensor: torch.Tensor, target_tiles_count: Optional[int]):
 
     # return input tensor if there is no target tile count
     if target_tiles_count is None:

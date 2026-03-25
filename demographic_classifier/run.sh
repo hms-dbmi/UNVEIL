@@ -12,5 +12,5 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-python run.py --config "$1"
+python run.py --configs_path "$1"
 

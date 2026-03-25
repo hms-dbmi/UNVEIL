@@ -45,21 +45,24 @@ def get_device() -> str:
         return "cpu"
     
 
-def safe_create_directory(dir_path):
+def safe_create_directory(dir_path, interactive=False):
     
     # Check if the directory already exists
     if os.path.exists(dir_path):
-        while True:
-            user_input = input(
-                f"Directory '{dir_path}' already exists. Do you want to proceed? (yes/no): "
-            ).strip().lower()
-            if user_input == 'yes':
-                break  # Proceed if user says yes
-            elif user_input == 'no':
-                print("Operation cancelled.")
-                exit()
-            else:
-                print("Please answer 'yes' or 'no'.")
+        if interactive:
+            while True:
+                user_input = input(
+                    f"Directory '{dir_path}' already exists. Do you want to proceed? (yes/no): "
+                ).strip().lower()
+                if user_input == 'yes':
+                    break  # Proceed if user says yes
+                elif user_input == 'no':
+                    print("Operation cancelled.")
+                    exit()
+                else:
+                    print("Please answer 'yes' or 'no'.")
+        else:
+            print(f"Directory '{dir_path}' already exists. Proceeding...")
     else:
         # Create the directory if it doesn't exist
         os.makedirs(dir_path)

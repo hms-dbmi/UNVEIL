@@ -31,3 +31,6 @@ wandb==0.15.4
 # YAML support
 pyyaml
 
+# HDF5 file format (for coordinate files)
+h5py
+

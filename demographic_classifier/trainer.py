@@ -6,7 +6,7 @@ from metrics import MetricManager, rank_prediction_quality
 from tqdm import tqdm
 from pathlib import PosixPath
 from utils.data_models import DATASET_TYPES, PTBundle
-from typing import Dict, Generator
+from typing import Dict, Generator, Optional, Union
 from collections import defaultdict
 from utils.data_utils import dict_avg
 
@@ -15,12 +15,12 @@ class Inference:
 
     def __init__(
         self,
-        model: nn.Module | None,
-        device: str | torch.device,
+        model: Optional[nn.Module],
+        device: Union[str, torch.device],
         eval_loader: DataLoader,
         metric_manager: MetricManager,
         intermediate_results_dict: Dict,
-        model_generator: Generator | None = None,
+        model_generator: Optional[Generator] = None,
     ) -> None:
 
         assert [model, model_generator].count(None) == 1, \
@@ -171,10 +171,10 @@ class Trainer(Inference):
     def __init__(
         self,
         model_checkpoint_dir: str,
-        device: str | torch.device,
+        device: Union[str, torch.device],
         train_loader: DataLoader,
         val_loader: DataLoader,
-        test_loader: DataLoader | None,
+        test_loader: Optional[DataLoader],
         loss_function: nn.Module,
         optimizer: Optimizer,
         metric_manager: MetricManager,
@@ -182,8 +182,8 @@ class Trainer(Inference):
         n_epochs: int,
         model: nn.Module,
         best_model_selector_metrics_list: str,
-        early_stopping_patience: int | None,
-        ex_val_loader: DataLoader | None = None,
+        early_stopping_patience: Optional[int],
+        ex_val_loader: Optional[DataLoader] = None,
         intermediate_results_dict: Dict = {},
     ) -> None:
         self.model_checkpoint_dir = PosixPath(model_checkpoint_dir)

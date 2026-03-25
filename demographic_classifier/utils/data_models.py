@@ -2,6 +2,7 @@ from enum import Enum
 import torch
 from pydantic import BaseModel
 from metrics import MetricManager
+from typing import Optional
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -29,7 +30,7 @@ class DATASET_TYPES(AutoEnum):
 
 class PTBundle(BaseModel):
     model: torch.nn.Module
-    optimizer: torch.optim.Optimizer | None = None
+    optimizer: Optional[torch.optim.Optimizer] = None
 
     # Allows Pydantic to handle arbitrary types like nn.Module and Optimizer
     class Config:

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Union
 from sklearn.metrics import (
     roc_auc_score,
     mean_squared_error,
@@ -681,7 +681,7 @@ def rank_prediction_quality(
     return result
 
 
-def format_metric_table_entries(target: str, metric: Metric, value: float | dict, model_epoch_label: str, dataset: str) -> list[dict]:
+def format_metric_table_entries(target: str, metric: Metric, value: Union[float, dict], model_epoch_label: str, dataset: str) -> List[dict]:
     
     table_entries = []
     
