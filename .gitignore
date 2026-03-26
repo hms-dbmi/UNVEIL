@@ -35,6 +35,9 @@ ENV/
 *.pth
 *.ckpt
 
+# Exception: Track example pre-trained models
+!example_data/mutation_prediction/models/**/model.pt
+
 # Data files
 *.csv
 *.h5
@@ -43,6 +46,9 @@ ENV/
 *.pkl
 *.npy
 *.npz
+
+# Exception: Track example data files
+!example_data/**/*.csv
 
 # Logs
 logs/
