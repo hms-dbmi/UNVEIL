@@ -1,7 +1,7 @@
 case_submitter_id,age,race,sex,primary_diagnosis,kfold_partition
-MOCK-PATIENT-001,old,White,Female,Infiltrating Ductal Carcinoma,0
-MOCK-PATIENT-002,young,Black,Female,Infiltrating Lobular Carcinoma,1
-MOCK-PATIENT-003,old,White,Male,Infiltrating Ductal Carcinoma,2
-MOCK-PATIENT-004,young,Asian,Female,Mixed Histology,3
-MOCK-PATIENT-005,old,White,Female,Infiltrating Ductal Carcinoma,0
+MOCK-PT-001-,old,White,Female,Infiltrating Ductal Carcinoma,0
+MOCK-PT-002-,young,Black,Female,Infiltrating Lobular Carcinoma,1
+MOCK-PT-003-,old,White,Male,Infiltrating Ductal Carcinoma,2
+MOCK-PT-004-,young,Asian,Female,Mixed Histology,3
+MOCK-PT-005-,old,White,Female,Infiltrating Ductal Carcinoma,0
 

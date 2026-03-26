@@ -137,13 +137,7 @@ class CE(Metric):
         super().__init__(name="CE", maximize=False, is_multi_target=True)
 
     def calculate(self, y_true, y_pred):
-        # Randomly sample 10 indices
-        num_samples = min(10, len(y_true))  # Ensure we don't sample more than available
-        random_indices = np.random.choice(len(y_true), num_samples, replace=False)
-        
-        # Compute and return log loss
-        ce_value = log_loss(y_true, y_pred)
-        return ce_value
+        return log_loss(y_true, y_pred)
     
 class Top1Accuracy(Metric):
     def __init__(self):
@@ -590,10 +584,28 @@ class MetricManager:
             
             # Find the epoch with the best metric value
             metric_obj = next(m for m in self.metrics if m.name == metric)
-            if metric_obj.should_maximize:
-                best_row = target_metrics.loc[target_metrics['value'].idxmax()]
+            
+            # Handle case where all values are NaN (e.g., small sample size)
+            if target_metrics['value'].isna().all() or target_metrics['value'].dropna().empty:
+                # Default to the maximum epoch number (most trained)
+                numeric_epochs = target_metrics[target_metrics['model_epoch_label'].apply(lambda x: isinstance(x, (int, float)))]
+                if not numeric_epochs.empty:
+                    best_row = numeric_epochs.iloc[-1]  # Last (highest) epoch
+                else:
+                    best_row = target_metrics.iloc[-1]
             else:
-                best_row = target_metrics.loc[target_metrics['value'].idxmin()]
+                if metric_obj.should_maximize:
+                    best_idx = target_metrics['value'].idxmax()
+                    if pd.isna(best_idx):
+                        best_row = target_metrics.iloc[-1]
+                    else:
+                        best_row = target_metrics.loc[best_idx]
+                else:
+                    best_idx = target_metrics['value'].idxmin()
+                    if pd.isna(best_idx):
+                        best_row = target_metrics.iloc[-1]
+                    else:
+                        best_row = target_metrics.loc[best_idx]
             
             # Create a key for the target and store the best epoch
             best_epochs[target] = best_row['model_epoch_label']
@@ -609,16 +621,19 @@ class MetricManager:
             ]
             model_label = f"target_{target}_best_{metric}"
             summary_metrics.loc[:, 'model_epoch_label'] = model_label
-            table_entry = {
-                'model_epoch_label': model_label,
-                'dataset': dataset,
-                'metric': "EPOCH",
-                'target': target,
-                'value': float(epoch)
-            }
-            summary_metrics = pd.concat(
-                [summary_metrics, pd.DataFrame([table_entry])], ignore_index=True
-            )
+            
+            # Only add EPOCH row if epoch is numeric
+            if isinstance(epoch, (int, float)):
+                table_entry = {
+                    'model_epoch_label': model_label,
+                    'dataset': dataset,
+                    'metric': "EPOCH",
+                    'target': target,
+                    'value': float(epoch)
+                }
+                summary_metrics = pd.concat(
+                    [summary_metrics, pd.DataFrame([table_entry])], ignore_index=True
+                )
 
             self.metrics_table = pd.concat([self.metrics_table, summary_metrics], ignore_index=True)
 

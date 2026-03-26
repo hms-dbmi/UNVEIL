@@ -45,6 +45,7 @@ class generateTCGADataSet():
                  geneType='',
                  geneName='',
                  attribute_map_yaml=None,
+                 label_map_yaml=None,
                  **kwargs):
         self.__dict__.update(locals())
         self.__dict__.update(kwargs)
@@ -92,26 +93,27 @@ class generateTCGADataSet():
                 # part = pd.read_csv(glob.glob(f'tcga_pan_cancer/{c}_tcga_pan_can_atlas_2018/clinical_data.tsv')[0], sep='\t')
                 part = pd.read_csv(glob.glob(join(
                     'tcga_pan_cancer', f'{c.lower()}_tcga_pan_can_atlas_2018', 'clinical_data.tsv'))[0], sep='\t')
-                df = pd.concat([df, part], ignore_index=True)
                 # label = pd.read_csv(glob.glob(f'tcga_pan_cancer/{c}_tcga_pan_can_atlas_2018/*/{self.geneType}_{self.geneName}*/*.csv')[0])
                 label = pd.read_csv(glob.glob(join(
                     'tcga_pan_cancer', f'{c.lower()}_tcga_pan_can_atlas_2018', '*', f'{self.geneType}_{self.geneName}*', '*.csv'))[0])
                 label_filter = label[['Patient ID', 'Altered']]
-                df = pd.merge(df, label_filter, on="Patient ID")
-                df.rename(
+                part = pd.merge(part, label_filter, on="Patient ID")
+                part.rename(
                     columns={
                         'Patient ID': 'case_submitter_id', 
                         'Altered': 'label',
                         'Race Category': 'race',
                         'Sex': 'sex'
                     }, inplace=True)
+                part['cancer'] = c
+                df = pd.concat([df, part], ignore_index=True)
             elif self.task in [1, 2]:      # cancer classification or detection
                 csvs = case_insensitive_glob(join(self.strClinicalInformationPath, f'*{c}_*.csv')) 
                 assert len(csvs) > 0, f"No clinical information file found for {c}"
                 part = pd.read_csv(csvs[0])
-            ## add cancer column
-            part['cancer'] = c
-            df = pd.concat([df, part], ignore_index=True)
+                ## add cancer column
+                part['cancer'] = c
+                df = pd.concat([df, part], ignore_index=True)
         # replace na strings to pd.na
         df = self.replace_na(df)
         # if sensitive attribute is age, convert it age group
@@ -122,6 +124,7 @@ class generateTCGADataSet():
         return df
 
     def fReduceDataFrame(self, df):
+        import sys
         ## get sensitive attribute (if None, use label as dummy sensitive attribute)
         sensitive_col = list(self.sensitive.keys())[0] if self.sensitive is not None else 'label'
         df = df[['case_submitter_id', sensitive_col, 'label']]
@@ -264,6 +267,7 @@ class generateTCGADataSet():
 
     
     def train_valid_test(self, split=1.0):
+        import sys
         # if self.feature_type == 'slide':
         #     return self.train_valid_test_slidelevel(split)
         if self.dfClinicalInformation is None:
@@ -284,7 +288,8 @@ class generateTCGADataSet():
                     lsDownloadPath_list = [list_files(p, pattern='*.pt') for p in path]
                     lsDownloadPath += list(itertools.chain(*lsDownloadPath_list))
                 else:
-                    lsDownloadPath += list_files(path, pattern='*.pt')
+                    files_found = list_files(path, pattern='*.pt')
+                    lsDownloadPath += files_found
             lsDownloadPath = list(set(lsDownloadPath))  # remove duplicates
         elif isinstance(self.strEmbeddingPath, list):
             print(self.strEmbeddingPath)
@@ -318,8 +323,8 @@ class generateTCGADataSet():
                     'DX' not in s[20:22] for s in dfClinicalInformation['folder_id'].tolist()]].reset_index(drop=True)
 
             le = LabelEncoder()
-            dfClinicalInformation.label = le.fit_transform(
-                dfClinicalInformation.label.values)
+            dfClinicalInformation['label'] = le.fit_transform(
+                dfClinicalInformation['label'].values)
             leLabel = le.classes_
             self.dictInformation["label"] = leLabel
         ############################################
@@ -353,10 +358,9 @@ class generateTCGADataSet():
                 dfClinicalInformation = dfClinicalInformation[[
                     'DX' not in s[20:22] for s in dfClinicalInformation['folder_id'].tolist()]].reset_index(drop=True)
             le = LabelEncoder()
-            dfClinicalInformation['label_old'] = dfClinicalInformation.label.copy(
-            )
-            dfClinicalInformation.label = le.fit_transform(
-                dfClinicalInformation.label.values)
+            dfClinicalInformation['label_old'] = dfClinicalInformation['label'].copy()
+            dfClinicalInformation['label'] = le.fit_transform(
+                dfClinicalInformation['label'].values)
             leLabel = le.classes_
             self.dictInformation['label'] = leLabel
 
@@ -436,7 +440,11 @@ class generateTCGADataSet():
 
 
             if self.task != 2:
-                if self.fold == 1:
+                if self.fold == 0:
+                    # No split - all data for testing (external validation)
+                    bags = [[], [], list(range(len(dfDummy.index)))]
+                
+                elif self.fold == 1:
                     train, valitest = train_test_split(
                         dfDummy, train_size=0.6, random_state=self.seed, shuffle=True, stratify=dfDummy['fold'].tolist())
                     vali, test = train_test_split(
@@ -452,7 +460,7 @@ class generateTCGADataSet():
 
                 elif self.fold == 2:
                     ab, cd = train_test_split(
-                        dfDummy, train_size=0.5, random_state=self.seed, shuffle=True, stratify=dfDummy['fold'].tolist())
+                        dfDummy, train_size=0.6, random_state=self.seed, shuffle=True, stratify=dfDummy['fold'].tolist())
                     a, b = train_test_split(
                         ab, test_size=0.5, random_state=self.seed, shuffle=True, stratify=ab['fold'].tolist())
                     c, d = train_test_split(
@@ -529,8 +537,8 @@ class generateTCGADataSet():
                     'DX' not in s[20:22] for s in dfClinicalInformation['folder_id'].tolist()]].reset_index(drop=True)
 
             le = LabelEncoder()
-            dfClinicalInformation.label = le.fit_transform(
-                dfClinicalInformation.label.values)
+            dfClinicalInformation['label'] = le.fit_transform(
+                dfClinicalInformation['label'].values)
             leLabel = le.classes_
             self.dictInformation["label"] = leLabel
         ############################################
@@ -564,10 +572,9 @@ class generateTCGADataSet():
                 dfClinicalInformation = dfClinicalInformation[[
                     'DX' not in s[20:22] for s in dfClinicalInformation['folder_id'].tolist()]].reset_index(drop=True)
             le = LabelEncoder()
-            dfClinicalInformation['label_old'] = dfClinicalInformation.label.copy(
-            )
-            dfClinicalInformation.label = le.fit_transform(
-                dfClinicalInformation.label.values)
+            dfClinicalInformation['label_old'] = dfClinicalInformation['label'].copy()
+            dfClinicalInformation['label'] = le.fit_transform(
+                dfClinicalInformation['label'].values)
             leLabel = le.classes_
             self.dictInformation['label'] = leLabel
 
@@ -650,7 +657,11 @@ class generateTCGADataSet():
                 # raise NotImplementedError(
                 #     "We need a custom stratification for tumor detection task because slides from the same patient can have different labels.\n Sophie please help implement this.")
             if self.task != 2:
-                if self.fold == 1:
+                if self.fold == 0:
+                    # No split - all data for testing (external validation)
+                    bags = [[], [], list(range(len(dfDummy.index)))]
+                
+                elif self.fold == 1:
                     train, valitest = train_test_split(
                         dfDummy, train_size=0.6, random_state=self.seed, shuffle=True, stratify=dfDummy['fold'].tolist())
                     vali, test = train_test_split(
@@ -902,10 +913,9 @@ class generateExternalDataSet(generateTCGADataSet):
                 dfClinicalInformation, dfDownload, on="folder_id", how='inner')
             
             le = LabelEncoder()
-            dfClinicalInformation['label_old'] = dfClinicalInformation.label.copy(
-            )
-            dfClinicalInformation.label = le.fit_transform(
-                dfClinicalInformation.label.values)
+            dfClinicalInformation['label_old'] = dfClinicalInformation['label'].copy()
+            dfClinicalInformation['label'] = le.fit_transform(
+                dfClinicalInformation['label'].values)
             leLabel = le.classes_
             self.dictInformation['label'] = leLabel
         else:

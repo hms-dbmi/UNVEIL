@@ -41,8 +41,9 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Load required modules (modify for your cluster environment)
-module load gcc/14.2.0 cuda/12.8 conda/miniforge3/24.11.3-0
-conda activate unveil
+# Comment out these lines if not running on HPC with environment modules:
+# module load gcc/14.2.0 cuda/12.8 conda/miniforge3/24.11.3-0
+# conda activate unveil
 
 # Create log directory
 mkdir -p ./logs/demographic_agentic
@@ -55,21 +56,15 @@ else
     ARRAY_ID=$SLURM_ARRAY_TASK_ID
 fi
 
-# Generate task configuration for this array ID
-CONFIG=$(python task_config_generator_unified.py $ARRAY_ID)
+# For example/testing purposes, use predefined configuration
+# In production, this would use task_config_generator_unified.py
+# CONFIG=$(python task_config_generator_unified.py $ARRAY_ID)
 
-if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to generate configuration for array ID $ARRAY_ID"
-    exit 1
-fi
-
-echo "Raw config: $CONFIG"
-
-# Parse JSON config
-ATTRIBUTE=$(echo "$CONFIG" | python3 -c "import sys, json; d=json.loads(sys.stdin.read()); print(d['attribute'])")
-CANCER=$(echo "$CONFIG" | python3 -c "import sys, json; d=json.loads(sys.stdin.read()); print(d['cancer'])")
-GENE=$(echo "$CONFIG" | python3 -c "import sys, json; d=json.loads(sys.stdin.read()); print(d['gene'])")
-FOUNDATION_MODEL=$(echo "$CONFIG" | python3 -c "import sys, json; d=json.loads(sys.stdin.read()); print(d['foundation_model'])")
+# Example configuration for PIK3CA gene
+ATTRIBUTE="Age"
+CANCER="BRCA"
+GENE="PIK3CA"
+FOUNDATION_MODEL="CHIEF"
 
 echo ""
 echo "=== Job Configuration (Demographic-Aware Agentic Scheduling) ==="
@@ -130,9 +125,10 @@ CANCER_LOWER=$(echo $CANCER | tr '[:upper:]' '[:lower:]')
 CMD_ARGS=(
     --cancer "$CANCER_LOWER"
     --model_path="$MODEL_PATH"
-    --partition=2
+    --embeddings_base_path="./data/features/"
+    --partition=0
     --fair_attr="$SENSITIVE"
-    --task=mutation
+    --task=4
     --train_method=baseline
     --genes "$GENE"
     --lr=1e-4
@@ -153,7 +149,6 @@ CMD_ARGS=(
     --slide_type=FS
     --magnification=20
     --selection=AUROC
-    --stain_norm
     --max_train_tiles=2000
     --patience=10
     --use_demographic_agent

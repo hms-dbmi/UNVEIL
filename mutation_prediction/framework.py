@@ -471,6 +471,11 @@ def parse_args(input_args=None, print_args=False):
         help="Enable adaptive filtering: scale percentile by slide confidence"
     )
     parser.add_argument(
+        "--demographic_use_correctness_weighting",
+        action="store_true",
+        help="Weight confidence by prediction correctness"
+    )
+    parser.add_argument(
         "--demographic_use_v6_routing",
         action="store_true",
         default=True,
@@ -528,12 +533,20 @@ def parse_args(input_args=None, print_args=False):
             args.fair_attr  = eval(args.fair_attr)
         except:
             raise ValueError(f"fair_attr should be a dictionary. Is {args.fair_attr} instead")
+    ## Set default values for legacy parameters (constraint, fair_lambda, pretrained)
+    if not hasattr(args, 'constraint'):
+        args.constraint = []
+    if not hasattr(args, 'fair_lambda'):
+        args.fair_lambda = []
+    if not hasattr(args, 'pretrained'):
+        args.pretrained = False
     ## handle multiple constraints and fairness lambdas
     if isinstance(args.constraint, str):
         args.constraint = [args.constraint]
     if isinstance(args.fair_lambda, (int, float)):
         args.fair_lambda = [float(args.fair_lambda)]
-    assert len(args.constraint) == len(args.fair_lambda), ValueError("Number of constraints and fairness lambdas should be the same.")
+    if len(args.constraint) > 0 and len(args.fair_lambda) > 0:
+        assert len(args.constraint) == len(args.fair_lambda), ValueError("Number of constraints and fairness lambdas should be the same.")
     ##
     if print:
         print("=========\tArguments\t=========")
@@ -1166,6 +1179,10 @@ def run(args, train_eval_dl, model, num_classes, colour, loss_fn, optimizer=None
     group_loss = 0.
     total_train_eval_loss = 0.
     total_fair_loss = 0.
+    avg_train_eval_loss = 0.
+    avg_fair_loss = 0.
+    avg_group_loss = 0.
+    avg_overall_loss = 0.
     logits = []
     probs = []
     predictions = []
@@ -1244,14 +1261,45 @@ def run(args, train_eval_dl, model, num_classes, colour, loss_fn, optimizer=None
     if model.training:
         return avg_train_eval_loss, avg_fair_loss, avg_group_loss, avg_overall_loss
     else:
-        predictions = np.concatenate(predictions, axis=0)
-        logits = np.concatenate(logits, axis=0)
-        probs = np.concatenate(probs, axis=0)
-        labels = np.concatenate(labels, axis=0)
-        senAttrs = np.concatenate(senAttrs, axis=0)
-        caseIds = [item for sublist in caseIds for item in sublist]
-        slideIds = [item for sublist in slideIds for item in sublist]
-        return (labels, senAttrs, predictions, probs, logits, caseIds, slideIds), avg_train_eval_loss, avg_fair_loss, avg_group_loss, avg_overall_loss
+        # Handle empty dataloaders (e.g., when partition=0 and train/val sets are empty)
+        if len(predictions) == 0 and len(events) == 0:
+            # Return 10 empty values with correct shapes for compatibility with main_genetic.py
+            # For classification tasks: predictions (1D), probs (2D with num_classes columns), logits (2D)
+            empty_predictions = np.array([])
+            empty_probs = np.zeros((0, num_classes))  # Empty 2D array with correct number of columns
+            empty_logits = np.zeros((0, num_classes))
+            empty_results = (np.array([]), np.array([]), np.array([]), np.array([]), np.array([]), 
+                           empty_predictions, empty_probs, empty_logits, [], [])
+            return empty_results, avg_train_eval_loss, avg_fair_loss, avg_group_loss, avg_overall_loss
+        
+        # For survival tasks (task 3)
+        if args.task == 3:
+            if len(predicted_survival_times) > 0:
+                predicted_survival_times = np.concatenate(predicted_survival_times, axis=0)
+                true_survival_times = np.concatenate(true_survival_times, axis=0)
+                events = np.concatenate(events, axis=0)
+            else:
+                predicted_survival_times = np.array([])
+                true_survival_times = np.array([])
+                events = np.array([])
+            senAttrs = np.concatenate(senAttrs, axis=0)
+            caseIds = [item for sublist in caseIds for item in sublist]
+            slideIds = [item for sublist in slideIds for item in sublist]
+            return (np.array([]), senAttrs, events, true_survival_times, predicted_survival_times,
+                   np.array([]), np.array([]), np.array([]), caseIds, slideIds), avg_train_eval_loss, avg_fair_loss, avg_group_loss, avg_overall_loss
+        # For classification tasks (task 1, 2, 4, etc.)
+        else:
+            predictions = np.concatenate(predictions, axis=0)
+            logits = np.concatenate(logits, axis=0)
+            probs = np.concatenate(probs, axis=0)
+            labels = np.concatenate(labels, axis=0)
+            senAttrs = np.concatenate(senAttrs, axis=0)
+            caseIds = [item for sublist in caseIds for item in sublist]
+            slideIds = [item for sublist in slideIds for item in sublist]
+            # Return 10 values for compatibility: labels, senAttrs, events (empty), true_survival_times (empty), 
+            # predicted_survival_times (empty), predictions, probs, logits, caseIds, slideIds
+            return (labels, senAttrs, np.array([]), np.array([]), np.array([]),
+                   predictions, probs, logits, caseIds, slideIds), avg_train_eval_loss, avg_fair_loss, avg_group_loss, avg_overall_loss
 
 def test_folder_setup(args, curr_fold,inference_mode:Literal['valid', 'test','train','all']='test'):
     inf_mode_prefix_map = {'valid': 'valid_', 'test': '', 'train': 'train_', 'all': 'all_'}

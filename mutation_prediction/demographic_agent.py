@@ -19,8 +19,8 @@ class DemographicPatchAgent:
                  base_filter_percentile=25,
                  adaptive_filtering=False,
                  use_correctness_weighting=False,
-                 demographic_inference_base_path=None,
-                 coord_base_path=None,
+                 demographic_inference_base_path='./data/demographic_inferences/',
+                 coord_base_path='./data/coords/',
                  save_dir=None):
         """
         Agent that filters patches based on demographic signals.
@@ -34,14 +34,10 @@ class DemographicPatchAgent:
             base_filter_percentile: Base percentage for filtering (10, 25, 50)
             adaptive_filtering: If True, scale percentile by slide confidence
             use_correctness_weighting: If True, weight confidence by prediction correctness
-            demographic_inference_base_path: Path to demographic inference data (required)
-            coord_base_path: Path to WSI coordinate files (required)
+            demographic_inference_base_path: Path to demographic inference data (default: './data/demographic_inferences/')
+            coord_base_path: Path to WSI coordinate files (default: './data/coords/')
             save_dir: Directory to save agent logs
         """
-        if demographic_inference_base_path is None:
-            raise ValueError("demographic_inference_base_path must be provided")
-        if coord_base_path is None:
-            raise ValueError("coord_base_path must be provided")
         
         self.strategy = strategy
         self.base_filter_percentile = base_filter_percentile

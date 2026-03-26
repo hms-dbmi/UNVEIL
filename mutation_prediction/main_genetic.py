@@ -80,6 +80,8 @@ def main_train_valid(args):
     directory_path = f"./tcga_pan_cancer/{args.cancer[0]}_tcga_pan_can_atlas_2018"
     if args.data_source != 'TCGA':
         raise notImplementedError("Only TCGA data source is supported for now. If you want to train on other datasets you need to implement this.")
+    
+    reweight_str = f"_finetune_{args.train_method}_{'-'.join(args.constraint)}" if args.pretrained else ""
 
     if os.path.isdir(directory_path):
         for types in os.listdir(directory_path):
@@ -155,7 +157,7 @@ def main_train_valid(args):
                             print(f"Max run index from baseline: {max_index}")
                         print(f"Assigning run ID: {max_index}")
 
-                        job, task = wandb_setup(args, max_index, gene=geneName_short)
+                        job, task = wandb_setup(args, max_index, reweight_str, gene=geneName_short)
 
                         # Dataset preparation
                         args.geneType = geneType
@@ -170,8 +172,6 @@ def main_train_valid(args):
                         # Initialize demographic-informed agent (without save_dir for now)
                         demographic_agent = None
                         if args.use_demographic_agent:
-                            from pathlib import Path
-                            
                             # Select agent class based on strategy
                             if args.demographic_strategy == 'unified':
                                 from unified_demographic_agent import UnifiedDemographicAgent as DemographicPatchAgent
@@ -207,7 +207,11 @@ def main_train_valid(args):
                                 print(f"[Main] Continuing without agent")
                                 demographic_agent = None
 
-                        if args.partition == 1:
+                        if args.partition == 0:
+                            # External validation - no split (all data for testing)
+                            train_ds, val_ds, test_ds = get_datasets(
+                                df, args.task, "vanilla", None, feature_type=args.feature_type,reweight_method=args.reweight_method, reweight_cols=args.reweight_cols, max_train_tiles=args.max_train_tiles, demographic_agent=demographic_agent)
+                        elif args.partition == 1:
                             train_ds, val_ds, test_ds = get_datasets(
                                 df, args.task, "vanilla", None, feature_type=args.feature_type,reweight_method=args.reweight_method, reweight_cols=args.reweight_cols, max_train_tiles=args.max_train_tiles, demographic_agent=demographic_agent)
                         elif args.partition in [2, "fixedKFold"]:
@@ -245,7 +249,6 @@ def main_train_valid(args):
 
                         # Set agent save directory now that model_save_path is created
                         if demographic_agent is not None:
-                            from pathlib import Path
                             agent_save_dir = Path(model_save_path) / "agent_data"
                             demographic_agent.save_dir = agent_save_dir
                             os.makedirs(agent_save_dir, exist_ok=True)
@@ -370,6 +373,21 @@ def main_train_valid(args):
                                     continue
                                 
                                 
+                                auc_arr = np.asarray(results["AUC"])
+                                if auc_arr.size == 0:
+                                    group_macro_auroc = np.nan
+                                    group_min_auroc = np.nan
+                                else:
+                                    group_macro_auroc = float(np.nanmean(auc_arr))
+                                    group_min_auroc = float(np.nanmin(auc_arr))
+                                tpr_tnr = np.concatenate(
+                                    [np.asarray(results["TPR"]).ravel(), np.asarray(results["TNR"]).ravel()])
+                                if tpr_tnr.size == 0:
+                                    group_macro_recall = np.nan
+                                    group_min_recall = np.nan
+                                else:
+                                    group_macro_recall = float(np.nanmean(tpr_tnr))
+                                    group_min_recall = float(np.nanmin(tpr_tnr))
                                 ES_OPT_MAPPING = {
                                     'EOdd': 'min',
                                     'avgEOpp': 'min',
@@ -384,10 +402,10 @@ def main_train_valid(args):
                                     'EOdd': results["EOddMax"],
                                     'avgEOpp': (results["EOpp0"] + results["EOpp1"]) / 2,
                                     'AUROC': auroc,
-                                    'GroupMacroAUROC': results["AUC"].mean(),
-                                    'GroupMinAUROC': results["AUC"].min(),
-                                    'GroupMacroRecall': np.mean(np.concatenate([results["TPR"], results["TNR"]])),
-                                    'GroupMinRecall': np.min(np.concatenate([results["TPR"], results["TNR"]])),
+                                    'GroupMacroAUROC': group_macro_auroc,
+                                    'GroupMinAUROC': group_min_auroc,
+                                    'GroupMacroRecall': group_macro_recall,
+                                    'GroupMinRecall': group_min_recall,
                                     'loss':  avg_eval_overall_loss,
                                 }
                                 criterion = ES_OPT_MAPPING[args.selection]

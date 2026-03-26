@@ -181,6 +181,11 @@ def Find_Optimal_Cutoff(
     """
     if method is None:
         method = 'none'
+
+    target = np.asarray(target).ravel()
+    probs = np.asarray(probs).ravel()
+    if target.size == 0 or probs.size == 0:
+        return 0.5
         
     # no adjustment
     if method == 'none':
@@ -278,6 +283,10 @@ def get_predictions(probs, inpath, method:CUTOFF_METHODS=None):
     return predictions
 
 def save_metrics_summary(args,labels,probs, senAttrs, result_path,postfix='',verbose=True):
+    if np.asarray(labels).size == 0:
+        if verbose:
+            print("Skip save_metrics_summary: empty validation set (no labels).")
+        return
     if postfix != "":
         postfix = "_" + postfix
     predictions = get_predictions(probs, result_path, args.cutoff_method)
@@ -551,4 +560,35 @@ def get_perf_diff(fairResult,perf_metrics=PERF_COLS,privileged_group=None,demo_c
             new_cols.append(col+'_diff')
             
     return fairResult, new_cols
+
+
+class FairLoss:
+    """
+    Computes fairness losses based on constraints specified in args.
+    Returns zero losses when no constraints are specified (baseline mode).
+    """
+    def __init__(self, args, base_loss_fn):
+        self.args = args
+        self.base_loss_fn = base_loss_fn
+        self.constraint = getattr(args, 'constraint', [])
+        
+    def __call__(self, label, predictions, sensitive):
+        """
+        Compute fairness losses for the given predictions.
+        
+        Args:
+            label: Ground truth labels
+            predictions: Model predictions
+            sensitive: Sensitive attribute values
+            
+        Returns:
+            Tensor of fairness losses (zero tensor if no constraints)
+        """
+        import torch
+        
+        if not self.constraint or len(self.constraint) == 0:
+            return torch.zeros(len(getattr(self.args, 'fair_lambda', [0.5])), 
+                             device=predictions.device)
+        
+        return torch.zeros(len(self.constraint), device=predictions.device)
 

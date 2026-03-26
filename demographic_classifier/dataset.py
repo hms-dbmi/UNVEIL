@@ -96,7 +96,7 @@ class WSILevelFeatureDataset(Dataset):
         sample_id = self.idx_sample_id_map[index]
 
         # get the sample label
-        y = torch.Tensor(self.idx_sample_target_map[index])
+        y = torch.Tensor(self.idx_sample_target_map[index]).float()
 
         # get location of features on disk
         x_path = self.idx_sample_feature_path_map[index]
@@ -615,7 +615,7 @@ class PtLevelMultiWSITileDataset(TileLevelFeaturesDataset):
 
         sample_id = self.idx_sample_id_map[index]
         feature_files = self.idx_sample_feature_paths_map[index]
-        y = torch.Tensor(self.idx_sample_target_map[index])
+        y = torch.Tensor(self.idx_sample_target_map[index]).float()
 
         if self.stain_balanced:
             stain_files = {}

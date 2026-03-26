@@ -1,8 +1,8 @@
 {
-    "MOCK-SAMPLE-001": "Female",
-    "MOCK-SAMPLE-002": "Female",
-    "MOCK-SAMPLE-003": "Male",
-    "MOCK-SAMPLE-004": "Female",
-    "MOCK-SAMPLE-005": "Female"
+    "MOCK-PT-001-01A-00-TSA": [1, 0],
+    "MOCK-PT-002-01A-00-TSA": [1, 0],
+    "MOCK-PT-003-01A-00-TSA": [0, 1],
+    "MOCK-PT-004-01A-00-TSA": [1, 0],
+    "MOCK-PT-005-01A-00-TSA": [1, 0]
 }
 

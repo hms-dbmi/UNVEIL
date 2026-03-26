@@ -28,14 +28,15 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Load required modules (modify for your cluster environment)
-module load gcc/14.2.0 cuda/12.8 conda/miniforge3/24.11.3-0
-conda activate unveil
+# Comment out these lines if not running on HPC with environment modules:
+# module load gcc/14.2.0 cuda/12.8 conda/miniforge3/24.11.3-0
+# conda activate unveil
 
 # Create log directory
 mkdir -p ./logs/train_TCGA_mutation
 
-# Get array task ID
-IDX=$((SLURM_ARRAY_TASK_ID))
+# Get array task ID (use 0 for single runs)
+IDX=${SLURM_ARRAY_TASK_ID:-0}
 
 # TCGA cancer types (31 total)
 declare -a CANCER=("brca" "coadread" "gbm"  "kich" "kirc"   "kirp" "lgg"  "luad" "lusc" "ov" \
@@ -62,7 +63,7 @@ MAGNIFICATION=20
 INPUT_FEATURE_LENGTH=${INPUT_FEATURE_LENGTHS[$FOUNDATION_MODEL]}
 INFERENCE_ONLY=false
 CUTOFF_METHOD=none
-TASK="mutation"  # Mutation prediction task
+TASK=4  # Mutation prediction task (numeric value)
 TRAIN_METHOD="baseline"
 EPOCHS=100
 N_WORKERS=4
@@ -71,12 +72,14 @@ PATIENCE=10
 LIMIT_TILES=true
 MAX_TILES=2000
 MODEL_PATH="./output/mutation_models/${SEN}/${DATA_SOURCE}/${FOUNDATION_MODEL}/${SLIDE_TYPE}/"
+EMBEDDINGS_BASE_PATH="./data/features/"
 
-# Run mutation prediction
+# Run mutation prediction (BASELINE - no demographic agent)
 python main_genetic.py \
     --cancer $cancer \
     --model_path="$MODEL_PATH" \
-    --partition=2 \
+    --embeddings_base_path="$EMBEDDINGS_BASE_PATH" \
+    --partition=0 \
     --fair_attr="$SENSITIVE" \
     --task=$TASK \
     --train_method=$TRAIN_METHOD \
@@ -90,7 +93,7 @@ python main_genetic.py \
     --acc_grad=2 \
     --scheduler_step=1 \
     --scheduler_gamma=0.955 \
-    --device="cuda" \
+    --device="cpu" \
     --data_source="$DATA_SOURCE" \
     --cutoff_method=$CUTOFF_METHOD \
     --input_feature_length="$INPUT_FEATURE_LENGTH" \
@@ -98,7 +101,6 @@ python main_genetic.py \
     --slide_type=$SLIDE_TYPE \
     --magnification=$MAGNIFICATION \
     --selection="AUROC" \
-    --stain_norm \
     $( [ "$INFERENCE_ONLY" = true ] && echo "--inference_only" ) \
     $( [ "$LIMIT_TILES" = true ] && echo "--max_train_tiles=$MAX_TILES" ) \
     $( [ "$USE_EARLY_STOPPING" = true ] && echo "--patience=$PATIENCE" )

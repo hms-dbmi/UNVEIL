@@ -1,8 +1,8 @@
 {
-    "MOCK-SAMPLE-001": "old",
-    "MOCK-SAMPLE-002": "young",
-    "MOCK-SAMPLE-003": "old",
-    "MOCK-SAMPLE-004": "young",
-    "MOCK-SAMPLE-005": "old"
+    "MOCK-PT-001-01A-00-TSA": [1, 0],
+    "MOCK-PT-002-01A-00-TSA": [0, 1],
+    "MOCK-PT-003-01A-00-TSA": [1, 0],
+    "MOCK-PT-004-01A-00-TSA": [0, 1],
+    "MOCK-PT-005-01A-00-TSA": [1, 0]
 }
 

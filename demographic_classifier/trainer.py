@@ -158,7 +158,12 @@ class Inference:
 
         # adjusting the targets shape
         if self.metric_manager.is_multi_class:
-            y_batch = y_batch.squeeze(-1).long()
+            # If targets are one-hot encoded (2D with probabilities), keep as float
+            # Otherwise convert class indices to long
+            if y_batch.dim() > 1 and y_batch.shape[-1] > 1:
+                y_batch = y_batch.float()
+            else:
+                y_batch = y_batch.squeeze(-1).long()
         else: 
             y_batch = y_batch.view(y_hat_batch.shape)
 
@@ -235,10 +240,6 @@ class Trainer(Inference):
 
             # evaulate model on the validation set
             self.evaluate(dataset=DATASET_TYPES.VAL)
-
-            # evaulate model on the test set 
-            # NOTE: this is for retrospective model picking strategy!
-            self.evaluate(dataset=DATASET_TYPES.TEST)
 
             # iterate over each selector metric to see if a new model needs to be saved
             for selector_metric in self.best_model_selector_metrics_list:

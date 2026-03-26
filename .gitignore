@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 .venv
+test_env_quick/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -85,6 +86,7 @@ temp/
 # Removed content (not for public release)
 _removed_content/
 _removed_temporarily/
+_removed/
 */_removed/
 
 # Configuration (if contains sensitive paths)
@@ -95,6 +97,11 @@ _removed_temporarily/
 data/features/
 data/clinical/
 data/coordinates/
+
+# Symlinks to example data (created during testing)
+mutation_prediction/clinical_information
+mutation_prediction/data
+mutation_prediction/tcga_pan_cancer
 
 # Keep sample data structure
 !data/sample/
