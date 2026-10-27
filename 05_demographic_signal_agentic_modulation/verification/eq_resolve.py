@@ -23,7 +23,11 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                 "src"))
-from unveil_tilefilter.resolve import DEFAULT_METRICS, parse_run, resolve  # noqa: E402
+from unveil_tilefilter.resolve import parse_run, resolve  # noqa: E402
+
+# the pre-revision rule of the paper's analysis code, which this script compares against:
+# all six of its metrics non-significant (the revised rule is EOddAbs alone, resolve's default)
+DEFAULT_METRICS = ("EOpp0", "EOpp1", "EOddAbs", "EOddMax", "EBAcc", "AUCDiff")
 
 OLD = {"auroc": "auroc_overall", "auroc_p_value": "auroc_p_value",
        "EOpp0": "eopp0", "EOpp1": "eopp1", "EOddAbs": "eodd_abs", "EOddMax": "eodd_max",
@@ -64,7 +68,7 @@ def main():
                 if new.get(k_new) != old.get(k_old):
                     problems.append(f"{k_new}: old {old.get(k_old)!r} new {new.get(k_new)!r}")
             _lit, strict, _miss = CC.resolution(old)
-            fair = resolve(new, None, check_auroc=False)["fair"]
+            fair = resolve(new, None, metrics=DEFAULT_METRICS, check_auroc=False)["fair"]
             if fair != strict:
                 problems.append(f"fair: old {strict}, new {fair}")
         else:

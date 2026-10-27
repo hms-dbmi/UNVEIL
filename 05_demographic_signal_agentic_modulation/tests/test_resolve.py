@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _harness import run_module_tests  # noqa: E402
 
 from unveil_tilefilter.resolve import (  # noqa: E402
-    DEFAULT_METRICS, best_run_prefix, parse_run, resolve)
+    ALL_METRICS, DEFAULT_METRICS, best_run_prefix, parse_run, resolve)
 
 PB_COLS = ["PQD", "EOpp0", "EOpp1", "EBAcc", "EOdd", "EOddAbs", "EOddMax", "AUCDiff",
            "ACC_diff"]
@@ -20,15 +20,15 @@ def write_run(d, prefix="1_", auroc=0.80, pvals=None, values=None, status=None,
               with_pbiased=True):
     os.makedirs(d, exist_ok=True)
     pvals = dict({c: 0.5 for c in PB_COLS}, **(pvals or {}))
-    values = dict({m: 0.1 for m in DEFAULT_METRICS}, **(values or {}))
+    values = dict({m: 0.1 for m in ALL_METRICS}, **(values or {}))
     with open(os.path.join(d, f"{prefix}bootstrapTest_concatenate_p_AUC.csv"), "w") as fh:
         fh.write(f",0\nAUROC,{auroc!r}\np_value,0.0\n")
-    cols = ["sensitiveAttr", "group_type", "N", "AUC"] + list(DEFAULT_METRICS)
+    cols = ["sensitiveAttr", "group_type", "N", "AUC"] + list(ALL_METRICS)
     with open(os.path.join(d, f"{prefix}bootstrapTest_concatenate_metrics.csv"), "w") as fh:
         fh.write("," + ",".join(cols) + "\n")
         for i, g in enumerate(("female", "male")):
             fh.write(f"{i},{g},unspecified,100.0,0.7," +
-                     ",".join(repr(values[m]) for m in DEFAULT_METRICS) + "\n")
+                     ",".join(repr(values[m]) for m in ALL_METRICS) + "\n")
     if with_pbiased:
         with open(os.path.join(d, f"{prefix}bootstrapTest_concatenate_p_biased.csv"),
                   "w") as fh:
@@ -74,25 +74,25 @@ def test_rule():
 
 def test_p_values():
     with tempfile.TemporaryDirectory() as tmp:
-        write_run(tmp, pvals={"EOddMax": 0.05})
+        write_run(tmp, pvals={"EOddAbs": 0.05})
         rec = parse_run(tmp)
+        assert DEFAULT_METRICS == ("EOddAbs",)
         assert resolve(rec, 0.8)["resolved"]                         # p >= 0.05 is fair
         assert not resolve(rec, 0.8, p_rule="gt")["resolved"]        # p > 0.05 is not met
-        write_run(tmp, pvals={"AUCDiff": 0.049})
+        write_run(tmp, pvals={"EOddAbs": 0.049})
         r = resolve(parse_run(tmp), 0.8)
-        assert not r["resolved"] and r["significant"] == ["AUCDiff"]
-        # the manuscript's list swaps EOddMax for ACC_diff
-        ms = ("EOpp0", "EOpp1", "EOddAbs", "ACC_diff", "EBAcc", "AUCDiff")
-        write_run(tmp, pvals={"EOddMax": 0.01, "ACC_diff": 0.2})
-        assert not resolve(parse_run(tmp), 0.8)["resolved"]
-        assert resolve(parse_run(tmp, ms), 0.8, ms)["resolved"]
+        assert not r["resolved"] and r["significant"] == ["EOddAbs"]
+        # other metrics count only when asked for
+        write_run(tmp, pvals={"AUCDiff": 0.01})
+        assert resolve(parse_run(tmp), 0.8)["resolved"]
+        assert not resolve(parse_run(tmp, ALL_METRICS), 0.8, ALL_METRICS)["resolved"]
 
 
 def test_missing_p_values():
     with tempfile.TemporaryDirectory() as tmp:
         write_run(tmp, with_pbiased=False)
         rec = parse_run(tmp)
-        assert rec["p_EOpp0"] is None
+        assert rec["p_EOddAbs"] is None
         assert not resolve(rec, 0.8)["resolved"]
         assert resolve(rec, 0.8, require_all_p=False)["resolved"]
 

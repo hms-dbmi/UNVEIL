@@ -7,10 +7,14 @@ A task folder written by the pipeline holds, for its latest complete run ``<k>_`
     <k>_bootstrapTest_concatenate_p_biased.csv  each metric's bias-test p-value (row "pval")
     <k>_run_status.json                         the run's status record
 
-A run RESOLVES a biased task when both hold (the defaults are the paper's rule):
-  * fair:  none of the fairness metrics is significant -- every bias-test p-value is at
-           least ``alpha`` (``p_rule='ge'``; 'gt' asks for p > alpha), and all of them are
-           present (``require_all_p``);
+The study's resolution rule: the mitigated model shows no significant EOddAbs disparity
+and its AUROC is not significantly lower than the baseline's by a paired permutation test.
+That rule is implemented on patient-level predictions by ``03_fairness_evaluation/
+compare_models.py`` (column ``resolved``). The pipeline's files hold no paired test, so this
+scorer applies the fairness half exactly and an AUROC margin as a proxy for the other half:
+  * fair:  no listed metric is significant (default ``metrics=('EOddAbs',)``) -- every
+           bias-test p-value is at least ``alpha`` (``p_rule='ge'``; 'gt' asks for
+           p > alpha), and all of them are present (``require_all_p``);
   * keeps AUROC: AUROC - baseline AUROC >= -``auroc_margin``, the baseline being the
            unmitigated model on the same task (pass its folder or its AUROC).
 
@@ -29,7 +33,8 @@ import os
 
 import pandas as pd
 
-DEFAULT_METRICS = ("EOpp0", "EOpp1", "EOddAbs", "EOddMax", "EBAcc", "AUCDiff")
+DEFAULT_METRICS = ("EOddAbs",)
+ALL_METRICS = ("EOpp0", "EOpp1", "EOddAbs", "EBAcc", "AUCDiff", "ACC_diff")
 REQUIRED = ("bootstrapTest_concatenate_p_AUC.csv", "bootstrapTest_concatenate_metrics.csv")
 OPTIONAL = ("bootstrapTest_concatenate_p_biased.csv",)
 # keys the pipeline's status writer adds when a fold failed; their PRESENCE condemns a run

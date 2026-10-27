@@ -1,0 +1,38 @@
+columns:
+  patient_id: patient_id
+  slide_id: slide_id
+  cohort: cohort
+  cancer: cancer
+
+exposures:
+  age:
+    type: continuous
+  sex:
+    type: categorical
+    reference: female
+    levels: [male]
+  race:
+    type: categorical
+    reference: white
+    levels: [black, asian]
+  prediction_correct:
+    type: categorical
+    reference: incorrect
+    levels: [correct]
+
+covariates:
+  technical: [technical_cov1, technical_cov2, technical_cov3, technical_cov4]
+  biological: [biological_cov1, biological_cov2]
+  demographic: [age, sex, race]
+
+categorical_covariates: [technical_cov1, technical_cov2, biological_cov1]
+
+random_intercept: [technical_cov1, technical_cov2]
+
+design:
+  max_levels: 3
+  min_level_count: 5
+  min_group_size: 10
+  min_residual_df: 10
+
+alpha: 0.05

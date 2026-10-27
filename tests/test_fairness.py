@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from unveil.fairness import METRICS, OVERALL_METRICS, auc, bias_test, bootstrap_metrics, fairness_metrics, paired_swap_test
+from unveil.fairness import GROUP_METRICS, METRICS, OVERALL_METRICS, auc, bias_test, bootstrap_metrics, fairness_metrics, paired_swap_test
 
 
 def test_auc_matches_pairwise_definition_with_ties():
@@ -21,7 +21,7 @@ def test_disparities_are_best_minus_worst_group_per_metric():
     assert m["EOpp0"] == pytest.approx(1.0 - 0.0)
     assert m["EBAcc"] == pytest.approx(1.0 - 0.5)
     assert m["EOddAbs"] == pytest.approx((0.5 + 1.0) / 2)
-    assert m["EOddMax"] == pytest.approx(1.0)
+    assert m["ACCDiff"] == pytest.approx(1.0 - 0.5)
     assert m["AUCDiff"] == pytest.approx(1.0 - 0.5)
     privileged = fairness_metrics(y, pred.astype(float), pred, group, privileged="b")
     assert privileged["EOpp1"] == pytest.approx(0.5 - 1.0)
@@ -53,7 +53,7 @@ def test_patient_with_two_units_stays_in_one_group():
     pred = (score > 0.5).astype(int)
     metric_draws, group_draws = bootstrap_metrics(y, group, patient, [(score, pred)], 50, rng)
     assert metric_draws.shape == (50, 1, len(METRICS) + len(OVERALL_METRICS))
-    assert group_draws.shape == (50, 1, 2, 4)
+    assert group_draws.shape == (50, 1, 2, len(GROUP_METRICS))
     assert np.isfinite(metric_draws).all()
     p = bias_test(y, score, pred, group, patient, 50, rng)
     assert set(p) == set(METRICS)
@@ -66,6 +66,7 @@ def test_paired_swap_test_on_identical_models_finds_no_change():
     group = rng.integers(0, 2, 80)
     score = rng.normal(size=80) + y
     pred = (score > 0.5).astype(int)
-    change, p = paired_swap_test(y, group, np.arange(80), [(score, pred), (score, pred)], 50, rng)
+    change, p, p_lower = paired_swap_test(y, group, np.arange(80), [(score, pred), (score, pred)], 50, rng)
     assert np.allclose(change, 0)
     assert np.allclose(p, 1)
+    assert np.allclose(p_lower, 1)

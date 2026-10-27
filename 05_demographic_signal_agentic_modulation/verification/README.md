@@ -2,7 +2,7 @@
 
 The four scripts here check that the package does what the paper's code did, on the
 paper's data. They were run on 2026-10-10 on the cluster where those files live. The
-commands are below and the outputs are in `logs/`. Each script takes its paths as
+commands are below. Each script takes its paths as
 arguments; nothing in the package refers to these locations.
 
 The locations used:
@@ -15,7 +15,7 @@ The locations used:
   `$UPSTREAM/../demographic_classifier`;
 - `FT`: the Python of the environment the signals were computed and the models trained in.
 
-## 1. Masks: `eq_masks.py` → `logs/eq_masks.log`
+## 1. Masks: `eq_masks.py`
 
 ```bash
 python verification/eq_masks.py --mask-root $REPRO/masks --signal-store $SIGNALS
@@ -29,7 +29,7 @@ The reproduction package ships 107 mask files:
 Each file is rebuilt with this package's defaults from the same signal folder and compared
 slide by slide. Every signal file is also checked on loading, as `load_signal` does.
 
-## 2. Signals: `eq_signals.py` → `logs/eq_signals.log`
+## 2. Signals: `eq_signals.py`
 
 ```bash
 $FT verification/eq_signals.py --features-dir "$NCKU/TCGA-BRCA-FS/VIRCHOW2/20X/pt_files(stain_norm)" \
@@ -46,7 +46,7 @@ $FT verification/eq_signals.py --features-dir "$NCKU/TCGA-BRCA-FS/VIRCHOW2/20X/p
   prediction.
 - The script was run in `FT`, with one thread.
 
-## 3. Resolution: `eq_resolve.py` → `logs/eq_resolve.log`
+## 3. Resolution: `eq_resolve.py`
 
 ```bash
 python verification/eq_resolve.py --runs-root $REPRO/runs \
@@ -63,7 +63,7 @@ python verification/eq_resolve.py --runs-root $REPRO/runs \
     original times.
   - Copies on a file system that resets the times of old files would pass it trivially.
 
-## 4. The adapter on the real pipeline: `eq_fairtune.py` → `logs/eq_fairtune.log`
+## 4. The adapter on the real pipeline: `eq_fairtune.py`
 
 ```bash
 $FT verification/eq_fairtune.py --upstream $UPSTREAM \
@@ -77,7 +77,7 @@ $FT verification/eq_fairtune.py --upstream $UPSTREAM \
 - **What it compares.** The reference config is the `train_configs.yaml` the paper's
   runs read.
 
-## Tests: `logs/tests.log`
+## Tests
 
 `python tests/run_all.py` runs seven test files that need no data.
 - `test_filters.py` compares the filters with `reference/filters_locked_c844fcf6.py` on 96

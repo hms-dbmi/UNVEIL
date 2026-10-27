@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 
-METRICS = ("EOpp0", "EOpp1", "EBAcc", "EOddAbs", "EOddMax", "AUCDiff")
-DERIVED_METRICS = ("EOddAbs", "EOddMax")
-GROUP_METRICS = ("AUC", "TPR", "TNR", "BAcc")
+METRICS = ("EOpp0", "EOpp1", "EBAcc", "EOddAbs", "ACCDiff", "AUCDiff")
+DERIVED_METRICS = ("EOddAbs",)
+GROUP_METRICS = ("AUC", "TPR", "TNR", "BAcc", "ACC")
 OVERALL_METRICS = ("AUC_overall", "BAcc_overall")
 PATIENT_KEYS = ["cohort", "cancer", "task", "patient_id"]
 
@@ -59,7 +59,7 @@ def _rates(y, score, pred):
     positive = y == 1
     tpr = pred[positive].mean() if positive.any() else np.nan
     tnr = 1 - pred[~positive].mean() if (~positive).any() else np.nan
-    return auc(y, score), tpr, tnr, (tpr + tnr) / 2
+    return auc(y, score), tpr, tnr, (tpr + tnr) / 2, (pred == y).mean()
 
 
 def _group_matrix(y, score, pred, group, levels):
@@ -74,8 +74,8 @@ def _disparities(matrix, levels, privileged):
         else:
             i = list(levels).index(privileged)
             best, worst = matrix[i], np.nanmin(np.delete(matrix, i, axis=0), axis=0)
-    d_auc, d_tpr, d_tnr, d_bacc = best - worst
-    return np.array([d_tnr, d_tpr, d_bacc, (abs(d_tnr) + abs(d_tpr)) / 2, np.maximum(abs(d_tnr), abs(d_tpr)), d_auc])
+    d_auc, d_tpr, d_tnr, d_bacc, d_acc = best - worst
+    return np.array([d_tnr, d_tpr, d_bacc, (abs(d_tnr) + abs(d_tpr)) / 2, d_acc, d_auc])
 
 
 def _metric_vector(y, score, pred, group, levels, privileged):
@@ -113,11 +113,12 @@ def _within(blocks, rng, replace):
     return drawn
 
 
-def bias_test(y, score, pred, group, cluster, n_boot, rng, privileged=None, null="bootstrap", strata=None):
+def bias_test(y, score, pred, group, cluster, n_boot, rng, privileged=None, null="permutation", strata=None):
     """One-sided p-value that each disparity is larger than expected with no group effect.
 
     Patient slots keep their group label while the outcomes filling them are redrawn,
-    with replacement ("bootstrap", the FAIR-Tuning null) or without ("permutation").
+    without replacement ("permutation", the study null, within `strata` such as the outcome
+    class) or with replacement ("bootstrap").
     """
     levels = np.unique(group)
     observed, _ = _metric_vector(y, score, pred, group, levels, privileged)
@@ -165,7 +166,8 @@ def auroc_test(y, score, n_boot, rng):
 
 
 def paired_swap_test(y, group, cluster, models, n_perm, rng, privileged=None):
-    """Two-sided p-value for the change between two models, swapping their predictions within patients."""
+    """Change between two models with its two-sided p-value and the one-sided (lower-tail)
+    p-value that the change is not below zero, swapping the models' predictions within patients."""
     levels = np.unique(group)
     (score_a, pred_a), (score_b, pred_b) = models
     observed = _metric_vector(y, score_b, pred_b, group, levels, privileged)[0] - _metric_vector(y, score_a, pred_a, group, levels, privileged)[0]
@@ -178,5 +180,8 @@ def paired_swap_test(y, group, cluster, models, n_perm, rng, privileged=None):
         null[k] = second - first
     valid = np.isfinite(null)
     exceed = (np.abs(null) >= np.abs(observed) - 1e-12) & valid
+    lower = (null <= observed + 1e-12) & valid
     p = (exceed.sum(axis=0) + 1) / (valid.sum(axis=0) + 1)
-    return observed, np.where(np.isfinite(observed), p, np.nan)
+    p_lower = (lower.sum(axis=0) + 1) / (valid.sum(axis=0) + 1)
+    finite = np.isfinite(observed)
+    return observed, np.where(finite, p, np.nan), np.where(finite, p_lower, np.nan)

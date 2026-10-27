@@ -162,18 +162,30 @@ def md5_file(path):
     return h.hexdigest()
 
 
-def load_classifier(checkpoint, code_dirs=(), key="model"):
-    """Load a pickled demographic classifier.
+def load_classifier(checkpoint, code_dirs=(), key="model", model_config=None):
+    """Load a demographic classifier.
 
-    ``code_dirs`` go on sys.path first, so the model's class can be found when the
-    checkpoint was saved as a whole object. ``key`` picks the object out of a saved dict
-    (the paper's checkpoints keep it under "model"); pass "" for a bare model object.
-    The checkpoint is unpickled, so load only files you trust."""
+    ``code_dirs`` go on sys.path first, so the model's class can be found. With
+    ``model_config``, the checkpoint is a plain state_dict (the released files): the JSON
+    names the class, ``model_type``, in the ``model`` module of ``code_dirs`` (or as
+    ``module:Class``), and its ``model_init_args``; the weights are loaded with
+    ``weights_only=True``. Without it, the checkpoint is unpickled as a whole object, and
+    ``key`` picks the model out of a saved dict (the paper's own checkpoints keep it under
+    "model"; pass "" for a bare object): load only files you trust."""
     import torch
 
     for d in reversed(list(code_dirs)):
         if d not in sys.path:
             sys.path.insert(0, d)
+    if model_config:
+        with open(model_config) as fh:
+            cfg = json.load(fh)
+        module_name, _, class_name = cfg["model_type"].rpartition(":")
+        cls = getattr(importlib.import_module(module_name or "model"), class_name)
+        obj = cls(**cfg.get("model_init_args", {}))
+        obj.load_state_dict(torch.load(checkpoint, map_location="cpu", weights_only=True))
+        obj.eval()
+        return obj
     obj = torch.load(checkpoint, map_location="cpu", weights_only=False)
     if key:
         if not isinstance(obj, dict) or key not in obj:
@@ -298,7 +310,7 @@ def _write_manifest(mpath, manifest):
 def compute_signals(features_dir, checkpoint, out_dir, code_dirs=(), checkpoint_key="model",
                     adapter="gated_abmil", feature_ext=".pt", h5_key="features", slides=None,
                     chunk=2048, threads=1, dtype="float16", activation="none",
-                    overwrite=False, log=print):
+                    overwrite=False, log=print, model_config=None):
     """Compute and store the signal of every slide; returns the manifest dict.
 
     The manifest (classifier md5 and settings) is written BEFORE the first slide, so a run
@@ -310,7 +322,7 @@ def compute_signals(features_dir, checkpoint, out_dir, code_dirs=(), checkpoint_
     import torch
 
     torch.set_num_threads(int(threads))
-    model = load_classifier(checkpoint, code_dirs, checkpoint_key)
+    model = load_classifier(checkpoint, code_dirs, checkpoint_key, model_config)
     fn = load_adapter(adapter)
     if fn is None:
         _gated_abmil_compat(model)
@@ -321,7 +333,9 @@ def compute_signals(features_dir, checkpoint, out_dir, code_dirs=(), checkpoint_
     manifest = {
         "package": "unveil_tilefilter", "version": __version__,
         "checkpoint": os.path.abspath(checkpoint), "checkpoint_md5": md5_file(checkpoint),
-        "checkpoint_key": checkpoint_key, "adapter": adapter, "chunk": int(chunk),
+        "checkpoint_key": checkpoint_key if not model_config else None,
+        "model_config": os.path.abspath(model_config) if model_config else None,
+        "adapter": adapter, "chunk": int(chunk),
         "threads": int(threads), "dtype": dtype, "activation": activation,
         "features_dir": os.path.abspath(features_dir), "feature_ext": feature_ext,
         "h5_key": h5_key if feature_ext == ".h5" else None, "code_dirs": list(code_dirs),

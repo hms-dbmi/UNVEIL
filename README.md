@@ -154,15 +154,17 @@ Mock example data is provided in `example_data/` to demonstrate the required for
 - Clinical metadata and mutation status files for BRCA
 - Demographic label files (age, race, sex)
 - A trained PIK3CA attention-MIL checkpoint
+- Synthetic patient tables for modules 3 and 4 (`example_data/analysis/`), with a spec whose
+  thresholds fit 160 patients
 
-See `example_data/README.md` for detailed specifications and the commands that run
-modules 1 and 2 on it.
+See `example_data/README.md` for detailed specifications and the commands that run every
+module on it.
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.8 (the study's version; `requirements.txt` pins its packages and installs on 3.8 to 3.10)
 - CUDA-capable GPU (recommended)
 - SLURM cluster environment (optional, for batch jobs)
 
@@ -258,7 +260,7 @@ python 03_fairness_evaluation/compare_models.py --baseline output/baseline/predi
     --mitigated output/signal_aware/predictions.csv --clinical clinical.csv --output comparison.csv
 ```
 
-AUC, TPR, TNR and balanced accuracy are computed in every demographic group. Each disparity
+AUC, TPR, TNR, balanced accuracy and accuracy are computed in every demographic group. Each disparity
 is the best group minus the worst group, or with `--privileged-reference` the reference
 level minus the worst other group:
 
@@ -268,17 +270,18 @@ level minus the worst other group:
 | `EOpp1` | TPR |
 | `EBAcc` | balanced accuracy |
 | `EOddAbs` | mean of the absolute TPR and TNR disparities |
-| `EOddMax` | larger of the absolute TPR and TNR disparities |
+| `ACCDiff` | accuracy |
 | `AUCDiff` | AUC |
 
 - **Groups:** continuous exposures are split at the patient median. Categorical exposures
   compare all levels with at least `min_group_size` patients, and `--pairwise` adds each
   level against the reference.
 - **Bias test:** each patient keeps its group while outcome and prediction pairs are redrawn
-  into the group slots, with replacement (`--null bootstrap`, the study default) or without
-  (`--null permutation`). The one-sided p-value is the share of null disparities at least as
-  large as the observed one.
-- **Intervals:** a patient bootstrap within groups.
+  into the group slots within outcome classes, without replacement (`--null permutation
+  --stratify-by label`, the study default: 2,000 permutations of demographic labels within
+  outcome classes) or with replacement (`--null bootstrap`). The one-sided p-value is the
+  share of null disparities at least as large as the observed one.
+- **Intervals:** a patient bootstrap within groups, 2,000 resamples.
 - **Comparison:** each disparity under both models, the paired bootstrap interval of the
   change, and a p-value from swapping the two models' predictions within patients.
 - **Multiplicity:** Benjamini-Hochberg q-values per cohort, exposure, contrast and metric,
@@ -375,14 +378,16 @@ from training slides:
 
 ```bash
 unveil-tilefilter signal --features-dir example_data/features --checkpoint demographic_classifier.pt \
-    --model-code 01_demographic_classifier --out signals/
+    --model-config demographic_classifier.json --model-code 01_demographic_classifier --out signals/
 unveil-tilefilter masks --signals signals/ --out masks/adaptive.npz
 python 02_pathology_task_prediction/train.py --manifest output/manifest.csv \
     --output-dir output/signal_aware --tile-masks masks/adaptive.npz
 ```
 
 The demographic classifier from module 1 provides, for every tile, its attention and its
-probability of the slide's demographic group. Each tile is scored by this evidence weighted
+probability of the slide's demographic group. The released classifiers are plain
+state_dicts with a JSON config naming the model class and its arguments (`--model-config`);
+a checkpoint pickled by module 1 loads without it. Each tile is scored by this evidence weighted
 by its attention rank, and the 33% highest-scoring tiles of each training slide are removed,
 always keeping at least 64 tiles. Validation, test and external slides are never filtered,
 so the model is evaluated on whole slides. The scoring rule was discovered by an LLM-driven
@@ -390,10 +395,11 @@ evolutionary search (OpenEvolve) on TCGA development tasks and then locked.
 
 - `--filter random_matched` and `--filter attention_matched` build the two controls, which
   remove the same number of tiles from each slide at random or by attention alone.
-- `unveil-tilefilter resolve` applies the paper's rule for whether a mitigated run resolves a
-  biased task.
-- The mitigated predictions are compared with the baseline using `compare_models.py`
-  (module 3).
+- A biased task is resolved when the mitigated model no longer shows a significant EOddAbs
+  disparity and its AUROC is not significantly lower than the baseline's by a paired
+  permutation test: the `resolved` column of `compare_models.py` (module 3).
+  `unveil-tilefilter resolve` scores `fairtune_pipeline` run folders with the same fairness
+  criterion and an AUROC margin.
 
 See `05_demographic_signal_agentic_modulation/README.md` for the exact filter, the
 `fairtune_pipeline` adapter and the verification against the paper's files.
@@ -427,8 +433,22 @@ output/
 
 ## Model Weights
 
-The trained baseline and signal-aware task models are released separately because of their
-size.
+The trained models are released on Hugging Face: https://huggingface.co/yulab/UNVEIL (weights under CC BY-NC
+4.0; `MODEL_CARD.md` in this repository is the same model card).
+
+| Release | Files | Used by |
+| --- | --- | --- |
+| Demographic classifiers | one gated attention-MIL classifier per cancer, attribute and slide type, as a state_dict with a JSON config | `unveil-tilefilter signal` (module 5) |
+| UNVEIL task models | the attention-MIL task models trained with the module 5 tile filter, 136 tasks with four fold models each | `02_pathology_task_prediction/predict.py`; module 3 |
+
+Module 2 trains unmitigated models from the recipe above.
+
+```bash
+pip install huggingface_hub
+python -c "from huggingface_hub import snapshot_download; snapshot_download('yulab/UNVEIL', local_dir='weights')"
+python 02_pathology_task_prediction/predict.py --manifest output/manifest.csv \
+    --checkpoint weights/task_models/<task>/fold0/model.pt --output predictions.csv
+```
 
 ## License
 

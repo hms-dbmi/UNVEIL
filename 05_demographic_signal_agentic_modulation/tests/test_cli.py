@@ -77,7 +77,7 @@ def test_resolve_table():
     with tempfile.TemporaryDirectory() as tmp:
         write_run(os.path.join(tmp, "base"), auroc=0.80, pvals={"EOddAbs": 0.001})
         write_run(os.path.join(tmp, "ok"), auroc=0.79)
-        write_run(os.path.join(tmp, "unfair"), auroc=0.81, pvals={"EOpp1": 0.01})
+        write_run(os.path.join(tmp, "unfair"), auroc=0.81, pvals={"EOddAbs": 0.01})
         write_run(os.path.join(tmp, "worse"), auroc=0.70)
         with open(os.path.join(tmp, "t.csv"), "w") as fh:
             fh.write("name,run_dir,baseline_dir,baseline_auroc\n")
@@ -88,7 +88,7 @@ def test_resolve_table():
         assert r.returncode == 0, r.stderr
         rows = {row["name"]: row for row in csv.DictReader(open(os.path.join(tmp, "res.csv")))}
         assert rows["ok"]["resolved"] == "True" and rows["ok_by_value"]["resolved"] == "True"
-        assert rows["unfair"]["resolved"] == "False" and "EOpp1" in rows["unfair"]["why"]
+        assert rows["unfair"]["resolved"] == "False" and "EOddAbs" in rows["unfair"]["why"]
         assert rows["worse"]["resolved"] == "False" and rows["worse"]["fair"] == "True"
 
 

@@ -63,9 +63,12 @@ For every slide this writes `<out>/<folder_id>.npz` with:
   if the run covers every slide in it.
 
 **Options:**
-- **Model.** `--model-code` is put on `sys.path` so the pickled model can be loaded.
-  `--checkpoint-key` names the entry that holds the model (default `model`; `''` for a bare
-  object).
+- **Model.** `--model-code` is put on `sys.path` so the model's class can be found. The
+  released classifiers are plain state_dicts: `--model-config` gives the JSON with
+  `model_type` (a class of the `model` module in `--model-code`, or `module:Class`) and
+  `model_init_args`, and the weights load with `weights_only=True`. A pickled checkpoint
+  loads without it; `--checkpoint-key` then names the entry that holds the model (default
+  `model`; `''` for a bare object).
 - **Default adapter (`gated_abmil`).** It expects `deep_attention.theta1/theta2/W/temperature`,
   an `mlp` ending in a sigmoid, and `input_dim`.
 - **Any other model:** pass `--adapter mymodule:myfunction`, where
@@ -210,19 +213,24 @@ unveil-tilefilter resolve --table runs.csv --out resolved.csv   # many runs:
     # runs.csv columns: name, run_dir, baseline_dir or baseline_auroc
 ```
 
-The tool reads the latest complete run in each task folder: the pipeline's
-`<k>_bootstrapTest_concatenate_*.csv` files and `<k>_run_status.json`. A run **resolves** a
-biased task when both of these hold:
+The study's rule: a biased task is **resolved** when the mitigated model no longer shows a
+significant EOddAbs disparity and its AUROC is not significantly lower than the baseline's
+by a paired permutation test. On patient-level predictions this is
+`03_fairness_evaluation/compare_models.py` (column `resolved`).
 
-- **fair:** every fairness metric's bias-test p-value is ≥ `--alpha` (0.05), and all of
-  them are present;
-  - the metrics are EOpp0, EOpp1, EOddAbs, EOddMax, EBAcc and AUCDiff (`--metrics`);
-  - `--p-rule gt` asks for p > alpha instead;
+This tool scores `fairtune_pipeline` task folders instead: the latest complete run's
+`<k>_bootstrapTest_concatenate_*.csv` files and `<k>_run_status.json`. Those files hold no
+paired test, so it applies the fairness half exactly and a margin for the AUROC half:
+
+- **fair:** the EOddAbs bias-test p-value is ≥ `--alpha` (0.05); `--metrics` adds the
+  pipeline's other metrics (EOpp0, EOpp1, EBAcc, AUCDiff, ACC_diff), all of which must then
+  be non-significant and present; `--p-rule gt` asks for p > alpha instead;
 - **keeps AUROC:** AUROC − baseline AUROC ≥ −`--auroc-margin` (0.02), computed in that
-  order in floating point, as in the paper's code.
-  - The paper's baseline is the task's unmitigated model on the split the biased tasks
-    were selected on (split 0).
-  - The margin is a threshold, not a significance test.
+  order in floating point.
+  - The baseline is the task's original unmitigated model, the one the biased tasks were
+    selected on.
+  - The margin is a threshold, not a significance test; use `compare_models.py` for the
+    paired test.
 
 **Failed folds.** A run whose status record shows a failed fold is not scored. The pipeline
 catches a fold's training error, goes on to the next fold and still writes a complete
@@ -316,15 +324,14 @@ how many.
 
 ## Verification
 
-These were run on 2026-10-10, on the paper's own files. The logs are in
-`verification/logs/`.
+These were run on 2026-10-10, on the paper's own files.
 
 | Check | Result |
 |---|---|
 | `tests/run_all.py`: unit and integration tests, with no data needed | 7 files, 44 tests: all pass |
 | `verification/eq_masks.py`: every mask file in the reproduction package, rebuilt from the paper's signals with default parameters | 107 of 107 files identical: 102,851 slides |
 | `verification/eq_signals.py`: stored signals recomputed with the paper's classifiers, in the environment that made them | 30 of 30 slides identical: 3 classifiers, 10 slides each |
-| `verification/eq_resolve.py`: every run folder of the reproduction package, parsed by this package and by the paper's own code | 1,629 folders: 1,601 scored by both, 28 refused by both, 0 disagreements |
+| `verification/eq_resolve.py`: every run folder of the reproduction package, parsed by this package and by the paper's own code (the pre-revision six-metric rule, passed explicitly) | 1,629 folders: 1,601 scored by both, 28 refused by both, 0 disagreements |
 | `verification/eq_fairtune.py`: the adapter on the real `fairtune_pipeline` | 22 of 22 checks pass |
 
 The `eq_fairtune` checks:
@@ -336,7 +343,7 @@ The `eq_fairtune` checks:
 - `ReweightDataset` is filtered too;
 - the census assertion fails when tampered with.
 
-The folders that both parsers refuse are the collaborators' split-0 adversarial-debiasing
+The folders that both parsers refuse are the collaborators' original adversarial-debiasing
 runs with error keys left by an earlier attempt. `eq_resolve.py --manifest` reads each one
 at its source folder in the collaborators' tree, which keeps the original file times, and
 `--ignore-error-keys` admits all 28 there.
@@ -363,7 +370,7 @@ src/unveil_tilefilter/
   resolve.py    step 4: the resolution rule
   cli.py        the unveil-tilefilter command
 tests/          run_all.py and seven test files (no data needed)
-verification/   eq_*.py checks against the paper's files, their logs, README.md
+verification/   eq_*.py checks against the paper's files, README.md
 reference/      filters_locked_c844fcf6.py, the paper's locked filter file
 examples/       own_pipeline.py and toy_models.py, a synthetic end-to-end example
 ```
